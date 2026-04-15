@@ -21,6 +21,9 @@ vendor/
 *~
 .DS_Store
 
+# Local binaries
+backend/bin/
+
 # Docker
 postgres_data/
 redis_data/
