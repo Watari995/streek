@@ -5,11 +5,11 @@ type UserID struct {
 }
 
 func NewUserID() UserID {
-	return UserID{newPrimaryIdBase()}
+	return UserID{newPrimaryIDBase()}
 }
 
 func NewUserIDFromString(s string) (UserID, error) {
-	base, err := newPrimaryIdBaseFromString(s)
+	base, err := newPrimaryIDBaseFromString(s)
 	if err != nil {
 		return UserID{}, err
 	}
@@ -21,11 +21,11 @@ type HabitID struct {
 }
 
 func NewHabitID() HabitID {
-	return HabitID{newPrimaryIdBase()}
+	return HabitID{newPrimaryIDBase()}
 }
 
 func NewHabitIDFromString(s string) (HabitID, error) {
-	base, err := newPrimaryIdBaseFromString(s)
+	base, err := newPrimaryIDBaseFromString(s)
 	if err != nil {
 		return HabitID{}, err
 	}
@@ -37,11 +37,11 @@ type CheckInID struct {
 }
 
 func NewCheckInID() CheckInID {
-	return CheckInID{newPrimaryIdBase()}
+	return CheckInID{newPrimaryIDBase()}
 }
 
 func NewCheckInIDFromString(s string) (CheckInID, error) {
-	base, err := newPrimaryIdBaseFromString(s)
+	base, err := newPrimaryIDBaseFromString(s)
 	if err != nil {
 		return CheckInID{}, err
 	}
