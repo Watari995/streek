@@ -13,19 +13,19 @@ type CheckIn struct {
 	createdAt   time.Time
 }
 
-func (c CheckIn) ID() valueobject.CheckInID {
+func (c *CheckIn) ID() valueobject.CheckInID {
 	return c.id
 }
 
-func (c CheckIn) HabitID() valueobject.HabitID {
+func (c *CheckIn) HabitID() valueobject.HabitID {
 	return c.habitID
 }
 
-func (c CheckIn) CheckedDate() time.Time {
+func (c *CheckIn) CheckedDate() time.Time {
 	return c.checkedDate
 }
 
-func (c CheckIn) CreatedAt() time.Time {
+func (c *CheckIn) CreatedAt() time.Time {
 	return c.createdAt
 }
 

@@ -14,23 +14,23 @@ type User struct {
 	updatedAt    time.Time
 }
 
-func (u User) ID() valueobject.UserID {
+func (u *User) ID() valueobject.UserID {
 	return u.id
 }
 
-func (u User) Email() valueobject.Email {
+func (u *User) Email() valueobject.Email {
 	return u.email
 }
 
-func (u User) PasswordHash() string {
+func (u *User) PasswordHash() string {
 	return u.passwordHash
 }
 
-func (u User) CreatedAt() time.Time {
+func (u *User) CreatedAt() time.Time {
 	return u.createdAt
 }
 
-func (u User) UpdatedAt() time.Time {
+func (u *User) UpdatedAt() time.Time {
 	return u.updatedAt
 }
 
