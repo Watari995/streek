@@ -28,12 +28,24 @@ func (h Habit) Name() valueobject.String50 {
 	return h.name
 }
 
+func (h *Habit) SetName(name valueobject.String50) {
+	h.name = name
+}
+
 func (h Habit) Description() *valueobject.String200 {
 	return h.description
 }
 
+func (h *Habit) SetDescription(description *valueobject.String200) {
+	h.description = description
+}
+
 func (h Habit) LabelColor() valueobject.HexColor {
 	return h.labelColor
+}
+
+func (h *Habit) SetLabelColor(labelColor valueobject.HexColor) {
+	h.labelColor = labelColor
 }
 
 func (h Habit) CreatedAt() time.Time {
