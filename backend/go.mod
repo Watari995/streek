@@ -4,9 +4,9 @@ go 1.24.3
 
 require (
 	github.com/cockroachdb/errors v1.12.0
-	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gofrs/uuid/v5 v5.4.0
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/labstack/echo/v4 v4.15.1
 )
 
