@@ -11,7 +11,7 @@ type Habit struct {
 	userID      valueobject.UserID
 	name        valueobject.String50
 	description *valueobject.String200
-	color       valueobject.HexColor
+	labelColor  valueobject.HexColor
 	createdAt   time.Time
 	updatedAt   time.Time
 }
@@ -32,8 +32,8 @@ func (h Habit) Description() *valueobject.String200 {
 	return h.description
 }
 
-func (h Habit) Color() valueobject.HexColor {
-	return h.color
+func (h Habit) LabelColor() valueobject.HexColor {
+	return h.labelColor
 }
 
 func (h Habit) CreatedAt() time.Time {
@@ -49,7 +49,7 @@ func NewHabit(
 	userID valueobject.UserID,
 	name valueobject.String50,
 	description *valueobject.String200,
-	color valueobject.HexColor,
+	labelColor valueobject.HexColor,
 	createdAt time.Time,
 	updatedAt time.Time,
 ) Habit {
@@ -58,7 +58,7 @@ func NewHabit(
 		userID:      userID,
 		name:        name,
 		description: description,
-		color:       color,
+		labelColor:  labelColor,
 		createdAt:   createdAt,
 		updatedAt:   updatedAt,
 	}
@@ -68,14 +68,14 @@ func CreateHabit(
 	userID valueobject.UserID,
 	name valueobject.String50,
 	description *valueobject.String200,
-	color valueobject.HexColor,
+	labelColor valueobject.HexColor,
 ) Habit {
 	return NewHabit(
 		valueobject.NewHabitID(),
 		userID,
 		name,
 		description,
-		color,
+		labelColor,
 		time.Now(),
 		time.Now(),
 	)
