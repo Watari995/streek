@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Watari995/streek/backend/domain/valueobject"
+	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 	"github.com/golang-jwt/jwt/v4"
 )
 

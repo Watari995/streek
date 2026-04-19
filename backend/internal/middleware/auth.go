@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Watari995/streek/backend/domain/valueobject"
-	"github.com/Watari995/streek/backend/infrastructure/auth"
+	"github.com/Watari995/streek/backend/internal/domain/valueobject"
+	"github.com/Watari995/streek/backend/internal/infrastructure/auth"
 	"github.com/labstack/echo/v4"
 )
 

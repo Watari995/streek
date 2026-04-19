@@ -3,7 +3,7 @@ package entity
 import (
 	"time"
 
-	"github.com/Watari995/streek/backend/domain/valueobject"
+	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 )
 
 type User struct {
