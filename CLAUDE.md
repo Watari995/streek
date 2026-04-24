@@ -19,6 +19,8 @@ adapted to a smaller scope without over-engineering.
 - API design and routing
 - Value Object / Entity design
 
+**例外**: ユーザーが明示的に「書いて」と指示した場合はAIによるGoコード生成OK
+
 ### ✅ AI Allowed
 - SwiftUI client code (all of it)
 - Docker / docker-compose configuration
