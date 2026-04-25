@@ -3,6 +3,7 @@ package habit
 import (
 	"context"
 
+	"github.com/Watari995/streek/backend/internal/apperror"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
@@ -31,6 +32,9 @@ func (h *Update) Do(
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find habit")
+	}
+	if habit.UserID() != input.UserID {
+		return nil, apperror.NewForbiddenError().SetMessage("you do not have permission to update this habit")
 	}
 	habit.SetName(input.Name)
 	habit.SetDescription(input.Description)
