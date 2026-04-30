@@ -35,7 +35,7 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	// create check in entity and save it
 	checkInEntity := entity.CreateCheckIn(
 		input.HabitID,
-		// now should be  JST, so must check
+		// TODO: now should be  JST, so must check
 		time.Now(),
 	)
 	if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
