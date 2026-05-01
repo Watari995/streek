@@ -48,7 +48,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id valueobject.UserID) (*
 		return nil, err
 	}
 
-	return modelToEntity(row)
+	return toEntity(row)
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email valueobject.Email) (*entity.User, error) {
@@ -61,10 +61,10 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email valueobject.Emai
 		return nil, err
 	}
 
-	return modelToEntity(row)
+	return toEntity(row)
 }
 
-func modelToEntity(row userRow) (*entity.User, error) {
+func toEntity(row userRow) (*entity.User, error) {
 	userID, err := valueobject.NewUserIDFromString(row.ID)
 	if err != nil {
 		return nil, err
