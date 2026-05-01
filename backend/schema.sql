@@ -13,7 +13,7 @@ CREATE TABLE habits (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(50) NOT NULL,
     description VARCHAR(200),
-    color VARCHAR(7) NOT NULL,
+    label_color VARCHAR(7) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
