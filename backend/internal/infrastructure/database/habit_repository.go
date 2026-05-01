@@ -38,7 +38,7 @@ func (r *HabitRepository) Save(ctx context.Context, habit entity.Habit) (*entity
 	return &habit, nil
 }
 
-func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) (*entity.habit, error) {
+func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) (*entity.Habit, error) {
 	var row habitRow
 	err := r.db.QueryRowxContext(ctx, `
 		SELECT id, user_id, name, description, label_color, created_at, updated_at
@@ -49,10 +49,10 @@ func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) 
 		return nil, err
 	}
 
-	return toEntity(row)
+	return r.toEntity(row)
 }
 
-func toEntity(row habitRow) (*entity.Habit, error) {
+func (r *HaibtRepository) toEntity(row habitRow) (*entity.Habit, error) {
 	habitID, err := valueobject.NewHabitIDFromString(row.ID)
 	if err != nil {
 		return nil, err
@@ -91,4 +91,6 @@ func toEntity(row habitRow) (*entity.Habit, error) {
 		row.CreatedAt, // TODO: parse time
 		row.UpdatedAt, // TODO: parse time
 	)
+
+	return &habit, nil
 }
