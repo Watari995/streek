@@ -2,6 +2,7 @@ package habit
 
 import (
 	"context"
+	"time"
 
 	"github.com/Watari995/streek/backend/internal/apperror"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
@@ -39,6 +40,7 @@ func (h *Update) Do(
 	habit.SetName(input.Name)
 	habit.SetDescription(input.Description)
 	habit.SetLabelColor(input.LabelColor)
+	habit.SetUpdatedAt(time.Now())
 
 	updatedHabit, err := h.habitRepo.Save(
 		ctx,

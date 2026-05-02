@@ -56,6 +56,10 @@ func (h *Habit) UpdatedAt() time.Time {
 	return h.updatedAt
 }
 
+func (h *Habit) SetUpdatedAt(updatedAt time.Time) {
+	h.updatedAt = updatedAt
+}
+
 func NewHabit(
 	id valueobject.HabitID,
 	userID valueobject.UserID,

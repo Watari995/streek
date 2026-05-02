@@ -30,9 +30,17 @@ func NewHabitRepository(db *sqlx.DB) *HabitRepository {
 func (r *HabitRepository) Save(ctx context.Context, habit entity.Habit) (*entity.Habit, error) {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO habits (id, user_id, name, description, label_color, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		-- in case of conflict, update the habit
+		ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		description = EXCLUDED.description,
+		label_color = EXCLUDED.label_color,
+		updated_at = EXCLUDED.updated_at
+		`,
 		habit.ID(), habit.UserID(), habit.Name(), habit.Description(), habit.LabelColor(),
-		habit.CreatedAt(), habit.UpdatedAt(),
+		habit.CreatedAt(),
+		habit.UpdatedAt(),
 	)
 	if err != nil {
 		return nil, err
@@ -103,7 +111,7 @@ func (r *HabitRepository) toEntity(row habitRow) (*entity.Habit, error) {
 		if err != nil {
 			return nil, err
 		}
-		description =  desc
+		description = desc
 	}
 
 	labelColor, err := valueobject.NewHexColor(row.LabelColor)
