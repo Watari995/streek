@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	domainAuth "github.com/Watari995/streek/backend/internal/domain/auth"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
-	"github.com/Watari995/streek/backend/internal/infrastructure/auth"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,7 +16,7 @@ type contextKey string
 
 const userIDKey contextKey = "userID"
 
-func AuthMiddleware() echo.MiddlewareFunc {
+func AuthMiddleware(tokenGenerator domainAuth.ITokenGenerator) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// get header
@@ -31,7 +31,7 @@ func AuthMiddleware() echo.MiddlewareFunc {
 			tokenString := strings.TrimPrefix(header, "Bearer ")
 
 			// validate token and get userID
-			userID, err := auth.ValidateToken(tokenString)
+			userID, err := tokenGenerator.Validate(tokenString)
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]string{
 					"error": "invalid token",
