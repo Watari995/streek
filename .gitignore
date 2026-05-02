@@ -29,10 +29,14 @@ backend/bin/
 postgres_data/
 redis_data/
 
-# iOS
-ios/Streek.xcodeproj/xcuserdata/
-ios/Streek.xcodeproj/project.xcworkspace/xcuserdata/
-ios/*.xcuserstate
+# iOS / Xcode
+ios/**/DerivedData/
+ios/**/build/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/**/*.xcscmblueprint
+ios/**/*.xccheckout
+ios/**/.swiftpm/
 
 # OS
 Thumbs.db
