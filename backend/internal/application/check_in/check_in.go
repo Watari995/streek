@@ -35,7 +35,6 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	// create check in entity and save it
 	checkInEntity := entity.CreateCheckIn(
 		input.HabitID,
-		// TODO: now should be  JST, so must check
 		time.Now(),
 	)
 	if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
@@ -44,6 +43,6 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	return nil
 }
 
-func NewCheckIn(checkInRepo repository.ICheckInRepository) *CheckIn {
-	return &CheckIn{checkInRepo: checkInRepo}
+func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository) *CheckIn {
+	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo}
 }

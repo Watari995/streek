@@ -60,8 +60,12 @@ func (r *CheckInRepository) FindByHabitID(ctx context.Context, habitID valueobje
 	return checkIns, nil
 }
 
-func (r *CheckInRepository) Delete(ctx context.Context, id valueobject.CheckInID) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM check_ins WHERE id = $1`, id)
+func (r *CheckInRepository) DeleteByHabitIDAndCheckedDate(ctx context.Context, habitID valueobject.HabitID, date time.Time) error {
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM check_ins
+		WHERE habit_id = $1 AND checked_date = $2`,
+		habitID, date.Format("2006-01-02"),
+	)
 	return err
 }
 
