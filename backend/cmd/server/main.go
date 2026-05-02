@@ -67,8 +67,8 @@ func main() {
 
 	// start goroutine for background tasks
 	go func() {
-		if err := e.Start(cfg.Server.Port); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			e.Logger.Fatal("shutting down the server")
+		if err := e.Start(":" + cfg.Server.Port); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			e.Logger.Fatal(err)
 		}
 	}()
 
