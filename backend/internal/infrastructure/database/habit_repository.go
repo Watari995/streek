@@ -1,10 +1,12 @@
 package database
 
 import (
+	"context"
 	"time"
 
 	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
+	"github.com/jmoiron/sqlx"
 )
 
 type habitRow struct {
@@ -52,7 +54,7 @@ func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) 
 	return r.toEntity(row)
 }
 
-func (r *HabitRepository) FindByUserID(ctx context.Context, userID valueobject.UserId) ([]*entity.Habit, error) {
+func (r *HabitRepository) FindByUserID(ctx context.Context, userID valueobject.UserID) ([]*entity.Habit, error) {
 	rows := []habitRow{}
 	err := r.db.SelectContext(ctx, &rows, `
 		SELECT id, user_id, name, description, label_color, created_at, updated_at
@@ -79,7 +81,7 @@ func (r *HabitRepository) Delete(ctx context.Context, id valueobject.HabitID) er
 	return err
 }
 
-func (r *HaibtRepository) toEntity(row habitRow) (*entity.Habit, error) {
+func (r *HabitRepository) toEntity(row habitRow) (*entity.Habit, error) {
 	habitID, err := valueobject.NewHabitIDFromString(row.ID)
 	if err != nil {
 		return nil, err
@@ -115,8 +117,8 @@ func (r *HaibtRepository) toEntity(row habitRow) (*entity.Habit, error) {
 		name,
 		description,
 		labelColor,
-		row.CreatedAt, // TODO: parse time
-		row.UpdatedAt, // TODO: parse time
+		row.CreatedAt,
+		row.UpdatedAt,
 	)
 
 	return &habit, nil
