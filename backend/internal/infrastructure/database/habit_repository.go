@@ -124,7 +124,7 @@ func (r *HabitRepository) toEntity(row habitRow) (*entity.Habit, error) {
 		userID,
 		name,
 		description,
-		*labelColor,
+		labelColor,
 		row.CreatedAt,
 		row.UpdatedAt,
 	)
