@@ -27,7 +27,9 @@ func NewCheckInRepository(db *sqlx.DB) *CheckInRepository {
 func (r *CheckInRepository) Save(ctx context.Context, checkIn entity.CheckIn) (*entity.CheckIn, error) {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO check_ins (id, habit_id, checked_date, created_at)
-		VALUES ($1, $2, $3, $4)`,
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (habit_id, checked_date) DO NOTHING
+		`,
 		checkIn.ID(), checkIn.HabitID(), checkIn.CheckedDate().Format("2006-01-02"), checkIn.CreatedAt(),
 	)
 	if err != nil {
