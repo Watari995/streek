@@ -7,7 +7,7 @@ import (
 	"github.com/Watari995/streek/backend/internal/apperror"
 	applicationHabit "github.com/Watari995/streek/backend/internal/application/habit"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
-	"github.com/Watari995/streek/backend/internal/domain/valueobject"
+	"github.com/Watari995/streek/backend/internal/middleware"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,10 +19,6 @@ type HabitHandler struct {
 }
 
 // Request DTOs
-type listRequest struct {
-	UserID string `json:"user_id"`
-}
-
 type createRequest struct {
 	UserID      string `json:"user_id"`
 	Name        string `json:"name"`
@@ -48,7 +44,7 @@ type habitResponse struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
 	Name        string    `json:"name"`
-	Description string    `json:"description"`
+	Description *string    `json:"description"`
 	LabelColor  string    `json:"label_color"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
@@ -76,20 +72,14 @@ func NewHabitHandler(list *applicationHabit.List, create *applicationHabit.Creat
 }
 
 func (h *HabitHandler) List(c echo.Context) error {
-	// bind request body
-	var req listRequest
-	if err := c.Bind(&req); err != nil {
-		return RespondError(c, apperror.NewBadRequestError().SetMessage("invalid request body"))
-	}
-
-	// value object conversion
-	userID, err := valueobject.NewUserIDFromString(req.UserID)
+	ctx := c.Request().Context()
+	userID, err := middleware.GetUserID(ctx)
 	if err != nil {
-		return RespondError(c, apperror.NewBadRequestError().SetMessage("invalid user ID"))
+		return RespondError(c, apperror.NewUnauthorizedError().SetMessage("unauthorized"))
 	}
 
 	// call application service
-	output, err := h.list.Do(c.Request().Context(), applicationHabit.ListInput{
+	output, err := h.list.Do(ctx, applicationHabit.ListInput{
 		UserID: userID,
 	})
 	if err != nil {
