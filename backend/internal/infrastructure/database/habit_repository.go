@@ -28,6 +28,10 @@ func NewHabitRepository(db *sqlx.DB) *HabitRepository {
 }
 
 func (r *HabitRepository) Save(ctx context.Context, habit entity.Habit) (*entity.Habit, error) {
+	var description any
+	if d := habit.Description(); d != nil {
+		description = d.String()
+	}
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO habits (id, user_id, name, description, label_color, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -38,7 +42,7 @@ func (r *HabitRepository) Save(ctx context.Context, habit entity.Habit) (*entity
 		label_color = EXCLUDED.label_color,
 		updated_at = EXCLUDED.updated_at
 		`,
-		habit.ID(), habit.UserID(), habit.Name(), habit.Description(), habit.LabelColor(),
+		habit.ID(), habit.UserID(), habit.Name().String(), description, habit.LabelColor().String(),
 		habit.CreatedAt(),
 		habit.UpdatedAt(),
 	)

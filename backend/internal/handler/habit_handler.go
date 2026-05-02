@@ -90,9 +90,9 @@ func (h *HabitHandler) List(c echo.Context) error {
 	}
 
 	// return response
-	var habits []habitResponse
-	for _, habit := range output {
-		habits = append(habits, toHabitResponse(*habit))
+	habits := make([]habitResponse, len(output))
+	for i, habit := range output {
+		habits[i] = toHabitResponse(*habit)
 	}
 	return c.JSON(http.StatusOK, habitListResponse{Habits: habits})
 }
