@@ -14,7 +14,7 @@ CREATE TABLE "habits" (
   "user_id" uuid NOT NULL,
   "name" character varying(50) NOT NULL,
   "description" character varying(200) NULL,
-  "color" character varying(7) NOT NULL,
+  "label_color" character varying(7) NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY ("id"),
