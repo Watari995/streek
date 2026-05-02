@@ -103,7 +103,7 @@ func (r *HabitRepository) toEntity(row habitRow) (*entity.Habit, error) {
 		if err != nil {
 			return nil, err
 		}
-		description = &desc
+		description =  desc
 	}
 
 	labelColor, err := valueobject.NewHexColor(row.LabelColor)
@@ -116,7 +116,7 @@ func (r *HabitRepository) toEntity(row habitRow) (*entity.Habit, error) {
 		userID,
 		name,
 		description,
-		labelColor,
+		*labelColor,
 		row.CreatedAt,
 		row.UpdatedAt,
 	)
