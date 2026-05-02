@@ -9,7 +9,7 @@ type Email struct {
 	value string
 }
 
-func NewEmail(s string) (*Email, error) {
+func NewEmail(s string) (Email, error) {
 	err := validation.Validate(
 		s,
 		validation.Required,
@@ -17,9 +17,9 @@ func NewEmail(s string) (*Email, error) {
 		validation.RuneLength(1, 255),
 	)
 	if err != nil {
-		return nil, err
+		return Email{}, err
 	}
-	return &Email{value: s}, nil
+	return Email{value: s}, nil
 }
 
 func (e Email) String() string { return e.value }

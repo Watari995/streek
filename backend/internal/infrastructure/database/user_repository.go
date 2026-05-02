@@ -75,6 +75,6 @@ func (r *UserRepository) toEntity(row userRow) (*entity.User, error) {
 		return nil, err
 	}
 
-	user := entity.NewUser(userID, *email, row.PasswordHash, row.CreatedAt, row.UpdatedAt)
+	user := entity.NewUser(userID, email, row.PasswordHash, row.CreatedAt, row.UpdatedAt)
 	return &user, nil
 }
