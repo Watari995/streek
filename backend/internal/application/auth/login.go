@@ -6,6 +6,7 @@ import (
 
 	"github.com/Watari995/streek/backend/internal/apperror"
 	domainAuth "github.com/Watari995/streek/backend/internal/domain/auth"
+	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 	"github.com/cockroachdb/errors"
@@ -24,6 +25,7 @@ type LoginInput struct {
 
 type LoginOutput struct {
 	AccessToken string
+	User        entity.User
 }
 
 func NewLogin(userRepo repository.IUserRepository, hasher domainAuth.IPasswordHasher, tokenGenerator domainAuth.ITokenGenerator) *Login {
@@ -56,6 +58,7 @@ func (l *Login) Do(ctx context.Context, input LoginInput) (LoginOutput, error) {
 	}
 
 	return LoginOutput{
+		User:        *user,
 		AccessToken: accessToken,
 	}, nil
 }

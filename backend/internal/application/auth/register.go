@@ -25,6 +25,7 @@ type RegisterInput struct {
 
 type RegisterOutput struct {
 	AccessToken string
+	User        entity.User
 }
 
 func NewRegister(
@@ -69,5 +70,6 @@ func (r *Register) Do(ctx context.Context, input RegisterInput) (RegisterOutput,
 
 	return RegisterOutput{
 		AccessToken: accessToken,
+		User:        *savedUser,
 	}, nil
 }
