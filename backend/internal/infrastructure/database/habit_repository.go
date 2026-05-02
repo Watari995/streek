@@ -52,6 +52,33 @@ func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) 
 	return r.toEntity(row)
 }
 
+func (r *HabitRepository) FindByUserID(ctx context.Context, userID valueobject.UserId) ([]*entity.Habit, error) {
+	rows := []habitRow{}
+	err := r.db.SelectContext(ctx, &rows, `
+		SELECT id, user_id, name, description, label_color, created_at, updated_at
+		FROM habits
+		WHERE user_id = $1`, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	habits := make([]*entity.Habit, len(rows))
+	for i, row := range rows {
+		habit, err := r.toEntity(row)
+		if err != nil {
+			return nil, err
+		}
+		habits[i] = habit
+	}
+
+	return habits, nil
+}
+
+func (r *HabitRepository) Delete(ctx context.Context, id valueobject.HabitID) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM habits WHERE id = $1`, id)
+	return err
+}
+
 func (r *HaibtRepository) toEntity(row habitRow) (*entity.Habit, error) {
 	habitID, err := valueobject.NewHabitIDFromString(row.ID)
 	if err != nil {
