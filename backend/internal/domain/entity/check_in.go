@@ -9,7 +9,7 @@ import (
 type CheckIn struct {
 	id          valueobject.CheckInID
 	habitID     valueobject.HabitID
-	checkedDate time.Time
+	checkedDate valueobject.DateString
 	createdAt   time.Time
 }
 
@@ -21,7 +21,7 @@ func (c *CheckIn) HabitID() valueobject.HabitID {
 	return c.habitID
 }
 
-func (c *CheckIn) CheckedDate() time.Time {
+func (c *CheckIn) CheckedDate() valueobject.DateString {
 	return c.checkedDate
 }
 
@@ -33,7 +33,7 @@ func (c *CheckIn) CreatedAt() time.Time {
 func NewCheckIn(
 	id valueobject.CheckInID,
 	habitID valueobject.HabitID,
-	checkedDate time.Time,
+	checkedDate valueobject.DateString,
 	createdAt time.Time,
 ) CheckIn {
 	return CheckIn{
@@ -47,7 +47,7 @@ func NewCheckIn(
 // New creation
 func CreateCheckIn(
 	habitID valueobject.HabitID,
-	checkedDate time.Time,
+	checkedDate valueobject.DateString,
 ) CheckIn {
 	return NewCheckIn(
 		valueobject.NewCheckInID(),

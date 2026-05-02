@@ -12,7 +12,7 @@ import (
 type checkInRow struct {
 	ID          string    `db:"id"`
 	HabitID     string    `db:"habit_id"`
-	CheckedDate time.Time `db:"checked_date"`
+	CheckedDate string    `db:"checked_date"`
 	CreatedAt   time.Time `db:"created_at"`
 }
 
@@ -30,7 +30,7 @@ func (r *CheckInRepository) Save(ctx context.Context, checkIn entity.CheckIn) (*
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (habit_id, checked_date) DO NOTHING
 		`,
-		checkIn.ID(), checkIn.HabitID(), checkIn.CheckedDate().Format("2006-01-02"), checkIn.CreatedAt(),
+		checkIn.ID(), checkIn.HabitID(), checkIn.CheckedDate().String(), checkIn.CreatedAt(),
 	)
 	if err != nil {
 		return nil, err
@@ -60,11 +60,11 @@ func (r *CheckInRepository) FindByHabitID(ctx context.Context, habitID valueobje
 	return checkIns, nil
 }
 
-func (r *CheckInRepository) DeleteByHabitIDAndCheckedDate(ctx context.Context, habitID valueobject.HabitID, date time.Time) error {
+func (r *CheckInRepository) DeleteByHabitIDAndCheckedDate(ctx context.Context, habitID valueobject.HabitID, date valueobject.DateString) error {
 	_, err := r.db.ExecContext(ctx, `
 		DELETE FROM check_ins
 		WHERE habit_id = $1 AND checked_date = $2`,
-		habitID, date.Format("2006-01-02"),
+		habitID, date.String(),
 	)
 	return err
 }
@@ -80,10 +80,15 @@ func (r *CheckInRepository) toEntity(row checkInRow) (*entity.CheckIn, error) {
 		return nil, err
 	}
 
+	checkedDate, err := valueobject.NewDateString(row.CheckedDate)
+	if err != nil {
+		return nil, err
+	}
+
 	checkIn := entity.NewCheckIn(
 		checkInID,
 		habitID,
-		row.CheckedDate,
+		checkedDate,
 		row.CreatedAt,
 	)
 	return &checkIn, nil

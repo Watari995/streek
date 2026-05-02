@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
@@ -11,5 +10,5 @@ import (
 type ICheckInRepository interface {
 	Save(context.Context, entity.CheckIn) (*entity.CheckIn, error)
 	FindByHabitID(context.Context, valueobject.HabitID) ([]*entity.CheckIn, error)
-	DeleteByHabitIDAndCheckedDate(context.Context, valueobject.HabitID, time.Time) error
+	DeleteByHabitIDAndCheckedDate(context.Context, valueobject.HabitID, valueobject.DateString) error
 }

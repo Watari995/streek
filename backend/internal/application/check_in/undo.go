@@ -2,7 +2,6 @@ package checkin
 
 import (
 	"context"
-	"time"
 
 	"github.com/Watari995/streek/backend/internal/apperror"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
@@ -15,8 +14,9 @@ type Undo struct {
 }
 
 type UndoInput struct {
-	HabitID valueobject.HabitID
-	UserID  valueobject.UserID
+	HabitID     valueobject.HabitID
+	UserID      valueobject.UserID
+	CheckedDate valueobject.DateString
 }
 
 func (u *Undo) Do(ctx context.Context, input UndoInput) error {
@@ -27,8 +27,7 @@ func (u *Undo) Do(ctx context.Context, input UndoInput) error {
 	if habit.UserID() != input.UserID {
 		return apperror.NewForbiddenError().SetMessage("you do not have permission to undo check in this habit")
 	}
-	// delete check in
-	err = u.checkInRepo.DeleteByHabitIDAndCheckedDate(ctx, input.HabitID, time.Now())
+	err = u.checkInRepo.DeleteByHabitIDAndCheckedDate(ctx, input.HabitID, input.CheckedDate)
 	if err != nil {
 		return apperror.NewInternalServerError().SetMessage("failed to undo check in")
 	}

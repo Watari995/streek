@@ -2,7 +2,6 @@ package checkin
 
 import (
 	"context"
-	"time"
 
 	"github.com/Watari995/streek/backend/internal/apperror"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
@@ -16,8 +15,9 @@ type CheckIn struct {
 }
 
 type CheckInInput struct {
-	HabitID valueobject.HabitID
-	UserID  valueobject.UserID
+	HabitID     valueobject.HabitID
+	UserID      valueobject.UserID
+	CheckedDate valueobject.DateString
 }
 
 func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
@@ -35,7 +35,7 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	// create check in entity and save it
 	checkInEntity := entity.CreateCheckIn(
 		input.HabitID,
-		time.Now(),
+		input.CheckedDate,
 	)
 	if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
 		return apperror.NewInternalServerError().SetMessage("failed to check in")
