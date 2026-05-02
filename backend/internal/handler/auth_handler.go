@@ -16,7 +16,7 @@ type AuthHandler struct {
 	login    *applicationAuth.Login
 }
 
-// Request DTOs (unexported)
+// Request DTOs
 type registerRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -27,7 +27,7 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-// Response DTOs (unexported)
+// Response DTOs
 type userResponse struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
