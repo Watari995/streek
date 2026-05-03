@@ -3,9 +3,7 @@ import SwiftUI
 struct HabitListView: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(CheckInStore.self) private var checkInStore
-
-    // TODO: streaks come from a future stats endpoint. Keep at zero for now.
-    private let streaks: [String: Int] = [:]
+    @Environment(StatsStore.self) private var statsStore
 
     @State private var showingForm = false
     @State private var editingHabit: Habit?
@@ -32,9 +30,13 @@ struct HabitListView: View {
                     if case .idle = habitStore.loadState {
                         await habitStore.loadHabits()
                     }
+                    if case .idle = statsStore.loadState {
+                        await statsStore.loadOverview()
+                    }
                 }
                 .refreshable {
                     await habitStore.loadHabits()
+                    await statsStore.loadOverview()
                 }
                 .sheet(isPresented: $showingForm) {
                     NavigationStack {
@@ -114,7 +116,7 @@ struct HabitListView: View {
                     HabitRowView(
                         habit: habit,
                         isCheckedToday: checkInStore.isChecked(habitId: habit.id),
-                        streak: streaks[habit.id, default: 0],
+                        streak: statsStore.streak(for: habit.id).current,
                         onToggle: { toggle(habit) }
                     )
                     .onTapGesture {
@@ -151,6 +153,9 @@ struct HabitListView: View {
         .padding(.bottom, AppSpacing.md)
     }
 
+    /// "Done today" count from CheckInStore (optimistic, instant UI feedback).
+    /// StatsStore.doneToday lags by one network round-trip after a toggle, so
+    /// we prefer the local count here.
     private var completedCount: Int {
         habitStore.habits.reduce(0) { count, habit in
             count + (checkInStore.isChecked(habitId: habit.id) ? 1 : 0)
@@ -165,14 +170,17 @@ struct HabitListView: View {
 
     // MARK: - Actions
 
-    /// Tapping the row's check button. The CheckInStore handles both the
-    /// local UI flip and the corresponding API call.
+    /// Tapping the row's check button.
+    /// 1. CheckInStore optimistically flips local state and dispatches the API.
+    /// 2. After the API succeeds, refresh StatsStore so streaks update.
     private func toggle(_ habit: Habit) {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         Task {
             do {
                 try await checkInStore.toggle(habitId: habit.id)
+                // Background refresh — streak count needs server-side recompute.
+                await statsStore.loadOverview()
             } catch let APIError.server(_, _, message) {
                 toggleErrorMessage = message
             } catch {
@@ -187,4 +195,5 @@ struct HabitListView: View {
         .environment(AuthStore())
         .environment(HabitStore())
         .environment(CheckInStore())
+        .environment(StatsStore())
 }

@@ -2,66 +2,95 @@ import SwiftUI
 
 struct StatsView: View {
     @Environment(HabitStore.self) private var habitStore
-
-    // TODO: replace with `/api/v1/stats` endpoint once it exists.
-    // Streaks are currently always zero because CheckIn handler is not wired up.
-    private let streaks: [String: Int] = [:]
+    @Environment(StatsStore.self) private var statsStore
 
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.appBackground.ignoresSafeArea()
-
-                if habitStore.habits.isEmpty {
-                    EmptyStateView(
-                        systemImage: "chart.bar",
-                        title: "No stats yet",
-                        message: "Create some habits to see your progress here."
-                    )
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                            summaryCard
-
-                            Text("Per habit")
-                                .font(AppFont.label())
-                                .foregroundStyle(Color.appTextSecondary)
-                                .textCase(.uppercase)
-                                .padding(.horizontal, AppSpacing.xs)
-                                .padding(.top, AppSpacing.sm)
-
-                            VStack(spacing: AppSpacing.md) {
-                                ForEach(habitStore.habits) { habit in
-                                    statRow(for: habit)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, AppSpacing.lg)
-                        .padding(.top, AppSpacing.md)
-                        .padding(.bottom, AppSpacing.xxl)
-                    }
-                }
+                content
             }
             .navigationTitle("Stats")
             .toolbarBackground(Color.appBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .task {
+                if case .idle = statsStore.loadState {
+                    await statsStore.loadOverview()
+                }
+            }
+            .refreshable {
+                await statsStore.loadOverview()
+            }
         }
         .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Content branching
+
+    @ViewBuilder
+    private var content: some View {
+        if statsStore.habitOverviews.isEmpty {
+            emptyOrLoadingState
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                    summaryCard
+
+                    Text("Per habit")
+                        .font(AppFont.label())
+                        .foregroundStyle(Color.appTextSecondary)
+                        .textCase(.uppercase)
+                        .padding(.horizontal, AppSpacing.xs)
+                        .padding(.top, AppSpacing.sm)
+
+                    VStack(spacing: AppSpacing.md) {
+                        ForEach(statsStore.habitOverviews) { habitStat in
+                            statRow(for: habitStat)
+                        }
+                    }
+                }
+                .padding(.horizontal, AppSpacing.lg)
+                .padding(.top, AppSpacing.md)
+                .padding(.bottom, AppSpacing.xxl)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var emptyOrLoadingState: some View {
+        switch statsStore.loadState {
+        case .loading:
+            ProgressView()
+                .progressViewStyle(.circular)
+                .tint(Color.appAccent)
+        case .failed(let message):
+            EmptyStateView(
+                systemImage: "exclamationmark.triangle",
+                title: "Couldn't load stats",
+                message: message,
+                actionTitle: "Retry",
+                action: {
+                    Task { await statsStore.loadOverview() }
+                }
+            )
+        case .idle, .loaded:
+            EmptyStateView(
+                systemImage: "chart.bar",
+                title: "No stats yet",
+                message: "Create some habits to see your progress here."
+            )
+        }
     }
 
     // MARK: - Summary
 
     private var summaryCard: some View {
-        let longest = streaks.values.max() ?? 0
-        let active = habitStore.habits.count
-        let totalDone = 0  // TODO: real "done today" count once CheckIn endpoint is wired up
-
-        return HStack(spacing: AppSpacing.md) {
-            statBlock(value: "\(longest)", label: "Longest streak")
+        HStack(spacing: AppSpacing.md) {
+            statBlock(value: "\(statsStore.longestStreak)", label: "Longest streak")
             divider
-            statBlock(value: "\(active)", label: "Active habits")
+            statBlock(value: "\(statsStore.habitOverviews.count)", label: "Active habits")
             divider
-            statBlock(value: "\(totalDone)", label: "Done today")
+            statBlock(value: "\(statsStore.doneToday)", label: "Done today")
         }
         .padding(AppSpacing.lg)
         .frame(maxWidth: .infinity)
@@ -96,19 +125,28 @@ struct StatsView: View {
 
     // MARK: - Per-habit row
 
-    private func statRow(for habit: Habit) -> some View {
-        let streak = streaks[habit.id, default: 0]
+    private func statRow(for habitStat: HabitOverview) -> some View {
+        let labelColor = Color(hexString: habitStat.labelColor) ?? .appAccent
+        let createdAt = habitStore.habits.first(where: { $0.id == habitStat.habitId })?.createdAt
+        let streak = habitStat.currentStreak
+
         return HStack(spacing: AppSpacing.lg) {
             RoundedRectangle(cornerRadius: 3)
-                .fill(habit.color)
+                .fill(labelColor)
                 .frame(width: 4, height: 40)
             VStack(alignment: .leading, spacing: 2) {
-                Text(habit.name)
+                Text(habitStat.habitName)
                     .font(AppFont.headline(size: 15))
                     .foregroundStyle(Color.appTextPrimary)
-                Text("Started \(habit.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                    .font(AppFont.caption(size: 12))
-                    .foregroundStyle(Color.appTextSecondary)
+                if let createdAt {
+                    Text("Started \(createdAt.formatted(date: .abbreviated, time: .omitted))")
+                        .font(AppFont.caption(size: 12))
+                        .foregroundStyle(Color.appTextSecondary)
+                } else {
+                    Text("Best streak: \(habitStat.longestStreak)")
+                        .font(AppFont.caption(size: 12))
+                        .foregroundStyle(Color.appTextSecondary)
+                }
             }
             Spacer()
             HStack(spacing: 4) {
@@ -136,4 +174,5 @@ struct StatsView: View {
 #Preview {
     StatsView()
         .environment(HabitStore())
+        .environment(StatsStore())
 }
