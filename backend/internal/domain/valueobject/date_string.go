@@ -14,7 +14,7 @@ type DateString struct {
 // YYYY-MM-DD format
 var dateStringPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
-func NewDateString(s string) (DateString, error) {
+func NewDateStringFromString(s string) (DateString, error) {
 	err := validation.Validate(s,
 		validation.Required,
 		validation.Match(dateStringPattern),

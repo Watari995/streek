@@ -10,6 +10,7 @@ import (
 	"time"
 
 	applicationAuth "github.com/Watari995/streek/backend/internal/application/auth"
+	applicationCheckIn "github.com/Watari995/streek/backend/internal/application/check_in"
 	applicationHabit "github.com/Watari995/streek/backend/internal/application/habit"
 	"github.com/Watari995/streek/backend/internal/config"
 	"github.com/Watari995/streek/backend/internal/handler"
@@ -40,16 +41,21 @@ func main() {
 	// repository
 	userRepo := database.NewUserRepository(db)
 	habitRepo := database.NewHabitRepository(db)
+	checkInRepo := database.NewCheckInRepository(db)
 	hasher := infraAuth.NewBcryptHasher(bcrypt.DefaultCost)
 	tokenGenerator := infraAuth.NewJWTGenerator([]byte(cfg.JWT.Secret))
 
 	// services
 	registerService := applicationAuth.NewRegister(userRepo, hasher, tokenGenerator)
 	loginService := applicationAuth.NewLogin(userRepo, hasher, tokenGenerator)
+	// habit
 	listService := applicationHabit.NewList(habitRepo)
 	createService := applicationHabit.NewCreate(habitRepo)
 	updateService := applicationHabit.NewUpdate(habitRepo)
 	deleteService := applicationHabit.NewDelete(habitRepo)
+	// checkIn
+	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo)
+	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo)
 
 	// auth handler
 	authHandler := handler.NewAuthHandler(
@@ -61,6 +67,10 @@ func main() {
 		createService,
 		updateService,
 		deleteService,
+	)
+	checkInHandler := handler.NewCheckInHandler(
+		checkInService,
+		undoService,
 	)
 
 	// middleware settings
@@ -84,6 +94,9 @@ func main() {
 	habits.POST("", habitHandler.Create)
 	habits.PUT("/:id", habitHandler.Update)
 	habits.DELETE("/:id", habitHandler.Delete)
+	checkIns := habits.Group("/:id/check")
+	checkIns.POST("", checkInHandler.CheckIn)
+	checkIns.DELETE("", checkInHandler.Undo)
 
 	// start goroutine for background tasks
 	go func() {

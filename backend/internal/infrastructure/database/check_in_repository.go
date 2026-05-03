@@ -80,7 +80,7 @@ func (r *CheckInRepository) toEntity(row checkInRow) (*entity.CheckIn, error) {
 		return nil, err
 	}
 
-	checkedDate, err := valueobject.NewDateString(row.CheckedDate)
+	checkedDate, err := valueobject.NewDateStringFromString(row.CheckedDate)
 	if err != nil {
 		return nil, err
 	}
