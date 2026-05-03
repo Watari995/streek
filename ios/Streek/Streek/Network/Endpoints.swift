@@ -72,6 +72,11 @@ extension Endpoint {
         Endpoint(path: "/api/v1/habits/\(id)", method: .delete)
     }
 
+    // Stats
+    static func getStatsOverview(today: String) -> Endpoint {
+        Endpoint(path: "/api/v1/stats/overview?today=\(today)", method: .get)
+    }
+
     // CheckIns
     static func checkIn(habitId: String, checkedDate: String) -> Endpoint {
         struct Body: Encodable { let checked_date: String }

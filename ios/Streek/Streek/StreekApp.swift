@@ -5,6 +5,7 @@ struct StreekApp: App {
     @State private var auth = AuthStore()
     @State private var habitStore = HabitStore()
     @State private var checkInStore = CheckInStore()
+    @State private var statsStore = StatsStore()
 
     var body: some Scene {
         WindowGroup {
@@ -12,6 +13,7 @@ struct StreekApp: App {
                 .environment(auth)
                 .environment(habitStore)
                 .environment(checkInStore)
+                .environment(statsStore)
         }
     }
 }
