@@ -48,7 +48,7 @@ final class CheckInStore {
         else {
             return
         }
-        if snapshot.date == Self.todayString() {
+        if snapshot.date == Today.string() {
             self.checkedToday = Set(snapshot.habitIDs)
         } else {
             // Day rolled over — drop the stale snapshot.
@@ -57,7 +57,7 @@ final class CheckInStore {
     }
 
     private func persist() {
-        let snapshot = Snapshot(date: Self.todayString(), habitIDs: Array(checkedToday))
+        let snapshot = Snapshot(date: Today.string(), habitIDs: Array(checkedToday))
         if let data = try? JSONEncoder().encode(snapshot) {
             UserDefaults.standard.set(data, forKey: Self.storageKey)
         }
@@ -89,7 +89,7 @@ final class CheckInStore {
     /// API: `POST /api/v1/habits/:id/check`
     func check(habitId: String) async throws {
         guard !inFlight.contains(habitId) else { return }
-        let dateStr = Self.todayString()
+        let dateStr = Today.string()
 
         // Optimistic update
         checkedToday.insert(habitId)
@@ -113,7 +113,7 @@ final class CheckInStore {
     /// API: `DELETE /api/v1/habits/:id/check`
     func undo(habitId: String) async throws {
         guard !inFlight.contains(habitId) else { return }
-        let dateStr = Self.todayString()
+        let dateStr = Today.string()
 
         // Optimistic update
         checkedToday.remove(habitId)
@@ -144,16 +144,4 @@ final class CheckInStore {
         UserDefaults.standard.removeObject(forKey: Self.storageKey)
     }
 
-    // MARK: - Helpers
-
-    /// Today's date in `YYYY-MM-DD` form, in the device's current calendar.
-    /// Matches the backend's `DateString` value-object format.
-    static func todayString() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.calendar = Calendar(identifier: .gregorian)
-        f.timeZone = .current
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: Date())
-    }
 }
