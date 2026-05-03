@@ -45,7 +45,7 @@ extension Endpoint {
         )
     }
 
-    // Habits (backend not implemented yet — defined for future use)
+    // Habits
     static func listHabits() -> Endpoint {
         Endpoint(path: "/api/v1/habits", method: .get)
     }
@@ -73,21 +73,21 @@ extension Endpoint {
     }
 
     // CheckIns
-    static func checkIn(habitId: String, date: String) -> Endpoint {
-        struct Body: Encodable { let date: String }
+    static func checkIn(habitId: String, checkedDate: String) -> Endpoint {
+        struct Body: Encodable { let checked_date: String }
         return Endpoint(
             path: "/api/v1/habits/\(habitId)/check",
             method: .post,
-            body: Body(date: date)
+            body: Body(checked_date: checkedDate)
         )
     }
 
-    static func undoCheckIn(habitId: String, date: String) -> Endpoint {
-        struct Body: Encodable { let date: String }
+    static func undoCheckIn(habitId: String, checkedDate: String) -> Endpoint {
+        struct Body: Encodable { let checked_date: String }
         return Endpoint(
             path: "/api/v1/habits/\(habitId)/check",
             method: .delete,
-            body: Body(date: date)
+            body: Body(checked_date: checkedDate)
         )
     }
 }
