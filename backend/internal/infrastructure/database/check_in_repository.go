@@ -12,7 +12,7 @@ import (
 type checkInRow struct {
 	ID          string    `db:"id"`
 	HabitID     string    `db:"habit_id"`
-	CheckedDate string    `db:"checked_date"`
+	CheckedDate time.Time `db:"checked_date"`
 	CreatedAt   time.Time `db:"created_at"`
 }
 
@@ -80,7 +80,7 @@ func (r *CheckInRepository) toEntity(row checkInRow) (*entity.CheckIn, error) {
 		return nil, err
 	}
 
-	checkedDate, err := valueobject.NewDateStringFromString(row.CheckedDate)
+	checkedDate, err := valueobject.NewDateStringFromString(row.CheckedDate.Format("2006-01-02"))
 	if err != nil {
 		return nil, err
 	}
