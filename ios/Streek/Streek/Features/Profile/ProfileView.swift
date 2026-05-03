@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ProfileView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(HabitStore.self) private var habitStore
+    @Environment(CheckInStore.self) private var checkInStore
     @State private var showLogoutConfirm = false
 
     var body: some View {
@@ -27,7 +29,11 @@ struct ProfileView: View {
         }
         .preferredColorScheme(.dark)
         .alert("Log out?", isPresented: $showLogoutConfirm) {
-            Button("Log Out", role: .destructive) { auth.logout() }
+            Button("Log Out", role: .destructive) {
+                habitStore.reset()
+                checkInStore.reset()
+                auth.logout()
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You'll need to log in again to access your habits.")
@@ -136,7 +142,8 @@ struct ProfileView: View {
 }
 
 #Preview {
-    let store = AuthStore()
-    return ProfileView()
-        .environment(store)
+    ProfileView()
+        .environment(AuthStore())
+        .environment(HabitStore())
+        .environment(CheckInStore())
 }

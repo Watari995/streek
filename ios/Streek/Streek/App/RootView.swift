@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AuthStore.self) private var auth
+    @Environment(CheckInStore.self) private var checkInStore
 
     var body: some View {
         Group {
@@ -18,8 +19,9 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: auth.state)
         .task {
-            // Load any persisted session at app launch
+            // Load any persisted session and today's check-in snapshot.
             await auth.bootstrap()
+            checkInStore.bootstrap()
         }
         .preferredColorScheme(.dark)
     }

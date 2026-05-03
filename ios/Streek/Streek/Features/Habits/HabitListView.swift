@@ -1,86 +1,130 @@
 import SwiftUI
 
 struct HabitListView: View {
-    @Environment(AuthStore.self) private var auth
-    @State private var habits: [Habit] = MockHabits.all
-    @State private var checkedState: [String: Bool] = MockHabits.initialCheckedState
-    @State private var streaks: [String: Int] = MockHabits.streaks
+    @Environment(HabitStore.self) private var habitStore
+    @Environment(CheckInStore.self) private var checkInStore
+
+    // TODO: streaks come from a future stats endpoint. Keep at zero for now.
+    private let streaks: [String: Int] = [:]
+
     @State private var showingForm = false
     @State private var editingHabit: Habit?
+    @State private var toggleErrorMessage: String?
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.appBackground.ignoresSafeArea()
-
-                if habits.isEmpty {
-                    EmptyStateView(
-                        systemImage: "flame",
-                        title: "No habits yet",
-                        message: "Tap + to add your first habit and start a streak.",
-                        actionTitle: "Add Habit",
-                        action: { showingForm = true }
-                    )
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: AppSpacing.md) {
-                            todayHeader
-
-                            ForEach(habits) { habit in
-                                HabitRowView(
-                                    habit: habit,
-                                    isCheckedToday: checkedState[habit.id, default: false],
-                                    streak: streaks[habit.id, default: 0],
-                                    onToggle: { toggle(habit) }
-                                )
-                                .onTapGesture {
-                                    editingHabit = habit
-                                }
-                            }
+            content
+                .navigationTitle("Habits")
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showingForm = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.appAccent)
                         }
-                        .padding(.horizontal, AppSpacing.lg)
-                        .padding(.bottom, AppSpacing.xxl)
                     }
                 }
-            }
-            .navigationTitle("Habits")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingForm = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color.appAccent)
+                .toolbarBackground(Color.appBackground, for: .navigationBar)
+                .toolbarBackground(.visible, for: .navigationBar)
+                .task {
+                    if case .idle = habitStore.loadState {
+                        await habitStore.loadHabits()
                     }
                 }
-            }
-            .toolbarBackground(Color.appBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .sheet(isPresented: $showingForm) {
-                NavigationStack {
-                    HabitFormView(mode: .create) { newHabit in
-                        habits.append(newHabit)
-                        checkedState[newHabit.id] = false
-                        streaks[newHabit.id] = 0
+                .refreshable {
+                    await habitStore.loadHabits()
+                }
+                .sheet(isPresented: $showingForm) {
+                    NavigationStack {
+                        HabitFormView(mode: .create)
                     }
                 }
-            }
-            .sheet(item: $editingHabit) { habit in
-                NavigationStack {
-                    HabitFormView(mode: .edit(habit)) { updated in
-                        if let idx = habits.firstIndex(where: { $0.id == updated.id }) {
-                            habits[idx] = updated
-                        }
-                    } onDelete: { id in
-                        habits.removeAll { $0.id == id }
-                        checkedState.removeValue(forKey: id)
-                        streaks.removeValue(forKey: id)
+                .sheet(item: $editingHabit) { habit in
+                    NavigationStack {
+                        HabitFormView(mode: .edit(habit))
                     }
                 }
-            }
+                .alert(
+                    "Couldn't save check-in",
+                    isPresented: Binding(
+                        get: { toggleErrorMessage != nil },
+                        set: { if !$0 { toggleErrorMessage = nil } }
+                    ),
+                    presenting: toggleErrorMessage
+                ) { _ in
+                    Button("OK", role: .cancel) {}
+                } message: { message in
+                    Text(message)
+                }
         }
         .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Content branching
+
+    @ViewBuilder
+    private var content: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+
+            if habitStore.habits.isEmpty {
+                emptyOrLoadingState
+            } else {
+                habitListScroll
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var emptyOrLoadingState: some View {
+        switch habitStore.loadState {
+        case .loading:
+            ProgressView()
+                .progressViewStyle(.circular)
+                .tint(Color.appAccent)
+        case .failed(let message):
+            EmptyStateView(
+                systemImage: "exclamationmark.triangle",
+                title: "Couldn't load habits",
+                message: message,
+                actionTitle: "Retry",
+                action: {
+                    Task { await habitStore.loadHabits() }
+                }
+            )
+        case .idle, .loaded:
+            EmptyStateView(
+                systemImage: "flame",
+                title: "No habits yet",
+                message: "Tap + to add your first habit and start a streak.",
+                actionTitle: "Add Habit",
+                action: { showingForm = true }
+            )
+        }
+    }
+
+    private var habitListScroll: some View {
+        ScrollView {
+            LazyVStack(spacing: AppSpacing.md) {
+                todayHeader
+
+                ForEach(habitStore.habits) { habit in
+                    HabitRowView(
+                        habit: habit,
+                        isCheckedToday: checkInStore.isChecked(habitId: habit.id),
+                        streak: streaks[habit.id, default: 0],
+                        onToggle: { toggle(habit) }
+                    )
+                    .onTapGesture {
+                        editingHabit = habit
+                    }
+                }
+            }
+            .padding(.horizontal, AppSpacing.lg)
+            .padding(.bottom, AppSpacing.xxl)
+        }
     }
 
     // MARK: - Today header
@@ -92,7 +136,7 @@ struct HabitListView: View {
                 .foregroundStyle(Color.appTextSecondary)
                 .textCase(.uppercase)
             HStack(spacing: AppSpacing.sm) {
-                Text("\(completedCount) / \(habits.count)")
+                Text("\(completedCount) / \(habitStore.habits.count)")
                     .font(AppFont.title(size: 30))
                     .foregroundStyle(Color.appTextPrimary)
                 Text("done")
@@ -108,7 +152,9 @@ struct HabitListView: View {
     }
 
     private var completedCount: Int {
-        checkedState.values.filter { $0 }.count
+        habitStore.habits.reduce(0) { count, habit in
+            count + (checkInStore.isChecked(habitId: habit.id) ? 1 : 0)
+        }
     }
 
     private var todayString: String {
@@ -119,19 +165,26 @@ struct HabitListView: View {
 
     // MARK: - Actions
 
+    /// Tapping the row's check button. The CheckInStore handles both the
+    /// local UI flip and the corresponding API call.
     private func toggle(_ habit: Habit) {
-        let wasChecked = checkedState[habit.id, default: false]
-        checkedState[habit.id] = !wasChecked
-        let current = streaks[habit.id, default: 0]
-        streaks[habit.id] = wasChecked ? max(0, current - 1) : current + 1
-
-        // Haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
+        Task {
+            do {
+                try await checkInStore.toggle(habitId: habit.id)
+            } catch let APIError.server(_, _, message) {
+                toggleErrorMessage = message
+            } catch {
+                toggleErrorMessage = error.localizedDescription
+            }
+        }
     }
 }
 
 #Preview {
     HabitListView()
         .environment(AuthStore())
+        .environment(HabitStore())
+        .environment(CheckInStore())
 }

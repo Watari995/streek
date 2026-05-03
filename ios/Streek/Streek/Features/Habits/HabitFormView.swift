@@ -18,14 +18,15 @@ struct HabitFormView: View {
     }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(HabitStore.self) private var habitStore
 
     let mode: Mode
-    let onSave: (Habit) -> Void
-    var onDelete: ((String) -> Void)? = nil
 
     @State private var name: String
     @State private var description: String
     @State private var selectedColor: String
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
     @State private var showDeleteConfirm = false
 
     private static let colorPalette: [String] = [
@@ -34,11 +35,8 @@ struct HabitFormView: View {
         "#FF2D55", "#AF52DE", "#34C759"
     ]
 
-    init(mode: Mode, onSave: @escaping (Habit) -> Void, onDelete: ((String) -> Void)? = nil) {
+    init(mode: Mode) {
         self.mode = mode
-        self.onSave = onSave
-        self.onDelete = onDelete
-
         switch mode {
         case .create:
             _name = State(initialValue: "")
@@ -57,6 +55,10 @@ struct HabitFormView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: AppSpacing.xl) {
+                    if let errorMessage {
+                        ErrorBanner(message: errorMessage)
+                    }
+
                     StreekTextField(
                         label: "Name",
                         text: $name,
@@ -82,6 +84,7 @@ struct HabitFormView: View {
 
                     PrimaryButton(
                         title: mode.isEdit ? "Save Changes" : "Add Habit",
+                        isLoading: isSubmitting,
                         isEnabled: canSave,
                         action: save
                     )
@@ -100,6 +103,7 @@ struct HabitFormView: View {
                             .foregroundStyle(Color.appDanger)
                         }
                         .padding(.top, AppSpacing.md)
+                        .disabled(isSubmitting)
                     }
                 }
                 .padding(.horizontal, AppSpacing.xl)
@@ -114,6 +118,7 @@ struct HabitFormView: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
                     .foregroundStyle(Color.appTextSecondary)
+                    .disabled(isSubmitting)
             }
         }
         .toolbarBackground(Color.appBackground, for: .navigationBar)
@@ -159,51 +164,66 @@ struct HabitFormView: View {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    /// Persists the form via HabitStore. The store is the only place that
+    /// knows about `APIClient`; this view just calls a method.
     private func save() {
+        guard canSave, !isSubmitting else { return }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDesc = description.trimmingCharacters(in: .whitespacesAndNewlines)
         let descValue: String? = trimmedDesc.isEmpty ? nil : trimmedDesc
 
-        let now = Date()
-        switch mode {
-        case .create:
-            let habit = Habit(
-                id: UUID().uuidString.lowercased(),
-                userId: "current",
-                name: trimmedName,
-                description: descValue,
-                labelColor: selectedColor,
-                createdAt: now,
-                updatedAt: now
-            )
-            onSave(habit)
-
-        case .edit(let original):
-            let updated = Habit(
-                id: original.id,
-                userId: original.userId,
-                name: trimmedName,
-                description: descValue,
-                labelColor: selectedColor,
-                createdAt: original.createdAt,
-                updatedAt: now
-            )
-            onSave(updated)
+        isSubmitting = true
+        errorMessage = nil
+        Task {
+            do {
+                switch mode {
+                case .create:
+                    _ = try await habitStore.createHabit(
+                        name: trimmedName,
+                        description: descValue,
+                        labelColor: selectedColor
+                    )
+                case .edit(let habit):
+                    _ = try await habitStore.updateHabit(
+                        id: habit.id,
+                        name: trimmedName,
+                        description: descValue,
+                        labelColor: selectedColor
+                    )
+                }
+                dismiss()
+            } catch let APIError.server(_, _, message) {
+                errorMessage = message
+                isSubmitting = false
+            } catch {
+                errorMessage = error.localizedDescription
+                isSubmitting = false
+            }
         }
-
-        dismiss()
     }
 
     private func delete() {
-        if case .edit(let habit) = mode {
-            onDelete?(habit.id)
-            dismiss()
+        guard case .edit(let habit) = mode, !isSubmitting else { return }
+        isSubmitting = true
+        errorMessage = nil
+        Task {
+            do {
+                try await habitStore.deleteHabit(id: habit.id)
+                dismiss()
+            } catch let APIError.server(_, _, message) {
+                errorMessage = message
+                isSubmitting = false
+            } catch {
+                errorMessage = error.localizedDescription
+                isSubmitting = false
+            }
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        HabitFormView(mode: .create) { _ in }
+        HabitFormView(mode: .create)
+            .environment(HabitStore())
     }
 }

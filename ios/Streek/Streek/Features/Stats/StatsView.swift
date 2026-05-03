@@ -1,34 +1,45 @@
 import SwiftUI
 
 struct StatsView: View {
-    private let habits = MockHabits.all
-    private let streaks = MockHabits.streaks
+    @Environment(HabitStore.self) private var habitStore
+
+    // TODO: replace with `/api/v1/stats` endpoint once it exists.
+    // Streaks are currently always zero because CheckIn handler is not wired up.
+    private let streaks: [String: Int] = [:]
 
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.appBackground.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                        summaryCard
+                if habitStore.habits.isEmpty {
+                    EmptyStateView(
+                        systemImage: "chart.bar",
+                        title: "No stats yet",
+                        message: "Create some habits to see your progress here."
+                    )
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                            summaryCard
 
-                        Text("Per habit")
-                            .font(AppFont.label())
-                            .foregroundStyle(Color.appTextSecondary)
-                            .textCase(.uppercase)
-                            .padding(.horizontal, AppSpacing.xs)
-                            .padding(.top, AppSpacing.sm)
+                            Text("Per habit")
+                                .font(AppFont.label())
+                                .foregroundStyle(Color.appTextSecondary)
+                                .textCase(.uppercase)
+                                .padding(.horizontal, AppSpacing.xs)
+                                .padding(.top, AppSpacing.sm)
 
-                        VStack(spacing: AppSpacing.md) {
-                            ForEach(habits) { habit in
-                                statRow(for: habit)
+                            VStack(spacing: AppSpacing.md) {
+                                ForEach(habitStore.habits) { habit in
+                                    statRow(for: habit)
+                                }
                             }
                         }
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.md)
+                        .padding(.bottom, AppSpacing.xxl)
                     }
-                    .padding(.horizontal, AppSpacing.lg)
-                    .padding(.top, AppSpacing.md)
-                    .padding(.bottom, AppSpacing.xxl)
                 }
             }
             .navigationTitle("Stats")
@@ -42,8 +53,8 @@ struct StatsView: View {
 
     private var summaryCard: some View {
         let longest = streaks.values.max() ?? 0
-        let active = habits.count
-        let totalDone = MockHabits.initialCheckedState.values.filter { $0 }.count
+        let active = habitStore.habits.count
+        let totalDone = 0  // TODO: real "done today" count once CheckIn endpoint is wired up
 
         return HStack(spacing: AppSpacing.md) {
             statBlock(value: "\(longest)", label: "Longest streak")
@@ -124,4 +135,5 @@ struct StatsView: View {
 
 #Preview {
     StatsView()
+        .environment(HabitStore())
 }
