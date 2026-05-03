@@ -13,6 +13,7 @@ import (
 	applicationCheckIn "github.com/Watari995/streek/backend/internal/application/check_in"
 	applicationHabit "github.com/Watari995/streek/backend/internal/application/habit"
 	"github.com/Watari995/streek/backend/internal/config"
+	domainService "github.com/Watari995/streek/backend/internal/domain/service"
 	"github.com/Watari995/streek/backend/internal/handler"
 	infraAuth "github.com/Watari995/streek/backend/internal/infrastructure/auth"
 	"github.com/Watari995/streek/backend/internal/infrastructure/database"
@@ -45,6 +46,9 @@ func main() {
 	hasher := infraAuth.NewBcryptHasher(bcrypt.DefaultCost)
 	tokenGenerator := infraAuth.NewJWTGenerator([]byte(cfg.JWT.Secret))
 
+	// domain services
+	streakService := domainService.NewStreakService()
+
 	// services
 	registerService := applicationAuth.NewRegister(userRepo, hasher, tokenGenerator)
 	loginService := applicationAuth.NewLogin(userRepo, hasher, tokenGenerator)
@@ -53,6 +57,7 @@ func main() {
 	createService := applicationHabit.NewCreate(habitRepo)
 	updateService := applicationHabit.NewUpdate(habitRepo)
 	deleteService := applicationHabit.NewDelete(habitRepo)
+	getOverviewService := applicationHabit.NewGetOverview(habitRepo, checkInRepo, streakService)
 	// checkIn
 	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo)
 	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo)
@@ -72,6 +77,7 @@ func main() {
 		checkInService,
 		undoService,
 	)
+	statsHandler := handler.NewStatsHandler(getOverviewService)
 
 	// middleware settings
 	e.Use(echoMiddleware.Logger())
@@ -97,6 +103,11 @@ func main() {
 	checkIns := habits.Group("/:id/check")
 	checkIns.POST("", checkInHandler.CheckIn)
 	checkIns.DELETE("", checkInHandler.Undo)
+
+	// stats
+	stats := api.Group("/stats", middleware.AuthMiddleware(tokenGenerator))
+	// optional "today" query parameter
+	stats.GET("/overview", statsHandler.GetOverview)
 
 	// start goroutine for background tasks
 	go func() {
