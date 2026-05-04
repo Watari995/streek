@@ -3,6 +3,7 @@ package habit
 import (
 	"context"
 
+	domainCache "github.com/Watari995/streek/backend/internal/domain/cache"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
 	"github.com/Watari995/streek/backend/internal/domain/service"
@@ -15,6 +16,7 @@ type GetOverview struct {
 	habitRepo     repository.IHabitRepository
 	checkInRepo   repository.ICheckInRepository
 	streakService *service.StreakService
+	streakCache   domainCache.IStreakCache
 }
 
 type GetOverviewInput struct {
@@ -35,11 +37,12 @@ type GetOverviewOutput struct {
 	DoneToday     int
 }
 
-func NewGetOverview(habitRepo repository.IHabitRepository, checkInRepo repository.ICheckInRepository, streakService *service.StreakService) *GetOverview {
+func NewGetOverview(habitRepo repository.IHabitRepository, checkInRepo repository.ICheckInRepository, streakService *service.StreakService, streakCache domainCache.IStreakCache) *GetOverview {
 	return &GetOverview{
 		habitRepo:     habitRepo,
 		checkInRepo:   checkInRepo,
 		streakService: streakService,
+		streakCache:   streakCache,
 	}
 }
 
@@ -62,17 +65,43 @@ func (s *GetOverview) Do(ctx context.Context, input GetOverviewInput) (GetOvervi
 		i, h := i, habit
 		// start goroutine for each habit
 		g.Go(func() error {
+			// get streak snapshot from cache
+			snapshot, found, err := s.streakCache.Get(gctx, h.ID(), input.Today)
+			if err != nil {
+				// cache miss is not an error, just continue
+				// TODO: add logging
+				found = false
+			}
+			if found {
+				results[i] = HabitOverview{
+					Habit:         h,
+					CurrentStreak: snapshot.CurrentStreak,
+					LongestStreak: snapshot.LongestStreak,
+					CheckedToday:  snapshot.CheckedToday,
+				}
+				return nil
+			}
+
 			checkIns, err := s.checkInRepo.FindByHabitID(gctx, h.ID())
 			if err != nil {
 				return errors.Wrap(err, "failed to find check-ins")
 			}
 			// compute overview for habit
+			currentStreak := s.streakService.ComputeCurrentStreak(checkIns, input.Today)
+			longestStreak := s.streakService.ComputeLongestStreak(checkIns)
+			checkedToday := s.streakService.HasCheckInOnDate(checkIns, input.Today)
 			results[i] = HabitOverview{
 				Habit:         h,
-				CurrentStreak: s.streakService.ComputeCurrentStreak(checkIns, input.Today),
-				LongestStreak: s.streakService.ComputeLongestStreak(checkIns),
-				CheckedToday:  s.streakService.HasCheckInOnDate(checkIns, input.Today),
+				CurrentStreak: currentStreak,
+				LongestStreak: longestStreak,
+				CheckedToday:  checkedToday,
 			}
+			// cache snapshot
+			_ = s.streakCache.Set(gctx, h.ID(), input.Today, domainCache.StreakSnapshot{
+				CurrentStreak: currentStreak,
+				LongestStreak: longestStreak,
+				CheckedToday:  checkedToday,
+			})
 			return nil
 		})
 	}
