@@ -20,8 +20,6 @@ services:
       - REDIS_PORT=6379
       - JWT_SECRET=dev-secret-change-in-production
       - APP_ENV=development
-    volumes:
-      - .:/app
 
   postgres:
     image: postgres:16-alpine
