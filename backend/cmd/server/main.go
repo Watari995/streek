@@ -16,6 +16,7 @@ import (
 	domainService "github.com/Watari995/streek/backend/internal/domain/service"
 	"github.com/Watari995/streek/backend/internal/handler"
 	infraAuth "github.com/Watari995/streek/backend/internal/infrastructure/auth"
+	"github.com/Watari995/streek/backend/internal/infrastructure/cache"
 	"github.com/Watari995/streek/backend/internal/infrastructure/database"
 	"github.com/Watari995/streek/backend/internal/middleware"
 	"github.com/labstack/echo/v4"
@@ -38,6 +39,13 @@ func main() {
 		e.Logger.Fatal(err)
 	}
 	defer db.Close()
+
+	// Redis connection
+	redisClient, err := cache.NewRedisClient(cfg.Redis)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	defer redisClient.Close()
 
 	// repository
 	userRepo := database.NewUserRepository(db)

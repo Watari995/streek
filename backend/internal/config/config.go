@@ -44,6 +44,10 @@ func (db DBConfig) DSN() string {
 	)
 }
 
+func (r RedisConfig) Addr() string {
+	return fmt.Sprintf("%s:%s", r.Host, r.Port)
+}
+
 func Load() (*Config, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
