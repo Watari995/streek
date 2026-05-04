@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Watari995/streek/backend/internal/apperror"
+	domainCache "github.com/Watari995/streek/backend/internal/domain/cache"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 )
@@ -11,6 +12,7 @@ import (
 type Undo struct {
 	checkInRepo repository.ICheckInRepository
 	habitRepo   repository.IHabitRepository
+	streakCache domainCache.IStreakCache
 }
 
 type UndoInput struct {
@@ -31,9 +33,13 @@ func (u *Undo) Do(ctx context.Context, input UndoInput) error {
 	if err != nil {
 		return apperror.NewInternalServerError().SetMessage("failed to undo check in")
 	}
+
+	// clear streak cache
+	_ = u.streakCache.Invalidate(ctx, input.HabitID, input.CheckedDate)
+
 	return nil
 }
 
-func NewUndo(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository) *Undo {
-	return &Undo{checkInRepo: checkInRepo, habitRepo: habitRepo}
+func NewUndo(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository, streakCache domainCache.IStreakCache) *Undo {
+	return &Undo{checkInRepo: checkInRepo, habitRepo: habitRepo, streakCache: streakCache}
 }

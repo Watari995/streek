@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Watari995/streek/backend/internal/apperror"
+	domainCache "github.com/Watari995/streek/backend/internal/domain/cache"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
@@ -12,6 +13,7 @@ import (
 type CheckIn struct {
 	checkInRepo repository.ICheckInRepository
 	habitRepo   repository.IHabitRepository
+	streakCache domainCache.IStreakCache
 }
 
 type CheckInInput struct {
@@ -40,9 +42,13 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
 		return apperror.NewInternalServerError().SetMessage("failed to check in")
 	}
+
+	// clear streak cache
+	_ = c.streakCache.Invalidate(ctx, input.HabitID, input.CheckedDate)
+
 	return nil
 }
 
-func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository) *CheckIn {
-	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo}
+func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository, streakCache domainCache.IStreakCache) *CheckIn {
+	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo, streakCache: streakCache}
 }

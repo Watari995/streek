@@ -68,8 +68,8 @@ func main() {
 	deleteService := applicationHabit.NewDelete(habitRepo)
 	getOverviewService := applicationHabit.NewGetOverview(habitRepo, checkInRepo, streakService, streakCache)
 	// checkIn
-	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo)
-	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo)
+	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo, streakCache)
+	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo, streakCache)
 
 	// auth handler
 	authHandler := handler.NewAuthHandler(
