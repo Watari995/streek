@@ -46,6 +46,7 @@ func main() {
 		e.Logger.Fatal(err)
 	}
 	defer redisClient.Close()
+	streakCache := cache.NewStreakCache(redisClient)
 
 	// repository
 	userRepo := database.NewUserRepository(db)
@@ -65,7 +66,7 @@ func main() {
 	createService := applicationHabit.NewCreate(habitRepo)
 	updateService := applicationHabit.NewUpdate(habitRepo)
 	deleteService := applicationHabit.NewDelete(habitRepo)
-	getOverviewService := applicationHabit.NewGetOverview(habitRepo, checkInRepo, streakService)
+	getOverviewService := applicationHabit.NewGetOverview(habitRepo, checkInRepo, streakService, streakCache)
 	// checkIn
 	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo)
 	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo)

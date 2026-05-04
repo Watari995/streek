@@ -68,7 +68,7 @@ func (s *GetOverview) Do(ctx context.Context, input GetOverviewInput) (GetOvervi
 			// get streak snapshot from cache
 			snapshot, found, err := s.streakCache.Get(gctx, h.ID(), input.Today)
 			if err != nil {
-				// cache miss is not an error, just continue
+				// cache error is not fatal, just continue
 				// TODO: add logging
 				found = false
 			}
