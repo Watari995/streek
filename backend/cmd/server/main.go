@@ -11,13 +11,16 @@ import (
 
 	applicationAuth "github.com/Watari995/streek/backend/internal/application/auth"
 	applicationCheckIn "github.com/Watari995/streek/backend/internal/application/check_in"
+	"github.com/Watari995/streek/backend/internal/application/eventhandler"
 	applicationHabit "github.com/Watari995/streek/backend/internal/application/habit"
 	"github.com/Watari995/streek/backend/internal/config"
+	"github.com/Watari995/streek/backend/internal/domain/event/types"
 	domainService "github.com/Watari995/streek/backend/internal/domain/service"
 	"github.com/Watari995/streek/backend/internal/handler"
 	infraAuth "github.com/Watari995/streek/backend/internal/infrastructure/auth"
 	"github.com/Watari995/streek/backend/internal/infrastructure/cache"
 	"github.com/Watari995/streek/backend/internal/infrastructure/database"
+	"github.com/Watari995/streek/backend/internal/infrastructure/event"
 	"github.com/Watari995/streek/backend/internal/middleware"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
@@ -52,10 +55,15 @@ func main() {
 	userRepo := database.NewUserRepository(db)
 	habitRepo := database.NewHabitRepository(db)
 	checkInRepo := database.NewCheckInRepository(db)
+	eventPublisher := event.NewInMemoryPublisher()
 	pointLedgerRepo := database.NewPointLedgerRepository(db)
 	txManager := database.NewTransactionManager(db)
 	hasher := infraAuth.NewBcryptHasher(bcrypt.DefaultCost)
 	tokenGenerator := infraAuth.NewJWTGenerator([]byte(cfg.JWT.Secret))
+
+	// handler
+	earnPointsOnCheckInHandler := eventhandler.NewEarnPointsOnCheckIn(pointLedgerRepo)
+	eventPublisher.Subscribe(types.EventTypeCheckInCompleted, earnPointsOnCheckInHandler.Handle)
 
 	// domain services
 	streakService := domainService.NewStreakService()
@@ -70,7 +78,7 @@ func main() {
 	deleteService := applicationHabit.NewDelete(habitRepo)
 	getOverviewService := applicationHabit.NewGetOverview(habitRepo, checkInRepo, streakService, streakCache)
 	// checkIn
-	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo, streakCache, pointLedgerRepo, txManager)
+	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo, streakCache, eventPublisher, txManager)
 	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo, streakCache)
 
 	// auth handler
