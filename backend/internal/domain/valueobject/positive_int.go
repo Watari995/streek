@@ -21,3 +21,11 @@ func NewPositiveInt(v int) (PositiveInt, error) {
 func (p PositiveInt) Int() int {
 	return p.value
 }
+
+func MustPositiveInt(v int) PositiveInt {
+	vo, err := NewPositiveInt(v)
+	if err != nil {
+		panic(err)
+	}
+	return vo
+}

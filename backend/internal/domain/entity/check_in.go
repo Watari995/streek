@@ -1,9 +1,16 @@
 package entity
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
+)
+
+const (
+	pointAmountPerCheckIn     = 10
+	pointReasonCheckIn        = "checkIn"
+	pointIdempotencyKeyPrefix = "checkIn"
 )
 
 type CheckIn struct {
@@ -27,6 +34,19 @@ func (c *CheckIn) CheckedDate() valueobject.DateString {
 
 func (c *CheckIn) CreatedAt() time.Time {
 	return c.createdAt
+}
+
+// point ledger related
+func (c *CheckIn) PointAmount() valueobject.PositiveInt {
+	return valueobject.MustPositiveInt(pointAmountPerCheckIn)
+}
+
+func (c *CheckIn) PointReason() valueobject.String50 {
+	return valueobject.MustString50(pointReasonCheckIn)
+}
+
+func (c *CheckIn) IdempotencyKey() string {
+	return fmt.Sprintf("%s:%s:%s", pointIdempotencyKeyPrefix, c.habitID.String(), c.checkedDate.String())
 }
 
 // DB restoration

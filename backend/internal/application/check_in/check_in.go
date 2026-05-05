@@ -7,13 +7,16 @@ import (
 	domainCache "github.com/Watari995/streek/backend/internal/domain/cache"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
+	"github.com/Watari995/streek/backend/internal/domain/transaction"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 )
 
 type CheckIn struct {
-	checkInRepo repository.ICheckInRepository
-	habitRepo   repository.IHabitRepository
-	streakCache domainCache.IStreakCache
+	checkInRepo     repository.ICheckInRepository
+	habitRepo       repository.IHabitRepository
+	streakCache     domainCache.IStreakCache
+	pointLedgerRepo repository.IPointLedgerRepository
+	txManager       transaction.ITransactionManager
 }
 
 type CheckInInput struct {
@@ -39,8 +42,26 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 		input.HabitID,
 		input.CheckedDate,
 	)
-	if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
-		return apperror.NewInternalServerError().SetMessage("failed to check in")
+
+	err = c.txManager.Run(ctx, func(ctx context.Context) error {
+		if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
+			return apperror.NewInternalServerError().SetMessage("failed to check in")
+		}
+		pointLedgerEntity := entity.CreatePointLedger(
+			input.UserID,
+			&input.HabitID,
+			valueobject.NewPointTypeEarn(),
+			checkInEntity.PointAmount(),
+			checkInEntity.PointReason(),
+			checkInEntity.IdempotencyKey(),
+		)
+		if _, err := c.pointLedgerRepo.Save(ctx, pointLedgerEntity); err != nil {
+			return apperror.NewInternalServerError().SetMessage("failed to save point ledger")
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	// clear streak cache
@@ -49,6 +70,6 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	return nil
 }
 
-func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository, streakCache domainCache.IStreakCache) *CheckIn {
-	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo, streakCache: streakCache}
+func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository, streakCache domainCache.IStreakCache, pointLedgerRepo repository.IPointLedgerRepository, txManager transaction.ITransactionManager) *CheckIn {
+	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo, streakCache: streakCache, pointLedgerRepo: pointLedgerRepo, txManager: txManager}
 }
