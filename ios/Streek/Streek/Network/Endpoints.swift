@@ -95,4 +95,13 @@ extension Endpoint {
             body: Body(checked_date: checkedDate)
         )
     }
+
+    // Points
+    static func getPointBalance() -> Endpoint {
+        Endpoint(path: "/api/v1/points/balance", method: .get)
+    }
+
+    static func getPointHistory() -> Endpoint {
+        Endpoint(path: "/api/v1/points/history", method: .get)
+    }
 }
