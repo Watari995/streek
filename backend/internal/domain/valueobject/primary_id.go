@@ -47,3 +47,19 @@ func NewCheckInIDFromString(s string) (CheckInID, error) {
 	}
 	return CheckInID{base}, nil
 }
+
+type PointLedgerID struct {
+	PrimaryIDBase
+}
+
+func NewPointLedgerID() PointLedgerID {
+	return PointLedgerID{newPrimaryIDBase()}
+}
+
+func NewPointLedgerIDFromString(s string) (PointLedgerID, error) {
+	base, err := newPrimaryIDBaseFromString(s)
+	if err != nil {
+		return PointLedgerID{}, err
+	}
+	return PointLedgerID{base}, nil
+}
