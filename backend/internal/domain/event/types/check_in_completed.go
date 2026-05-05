@@ -11,23 +11,32 @@ const (
 )
 
 type CheckInCompletedEvent struct {
-	UserID      valueobject.UserID
-	HabitID     valueobject.HabitID
-	CheckedDate valueobject.DateString
-	CreatedAt   time.Time
+	UserID         valueobject.UserID
+	HabitID        valueobject.HabitID
+	CheckedDate    valueobject.DateString
+	PointAmount    valueobject.PositiveInt
+	PointReason    valueobject.String50
+	IdempotencyKey string
+	CreatedAt      time.Time
 }
 
 func NewCheckInCompletedEvent(
 	userID valueobject.UserID,
 	habitID valueobject.HabitID,
 	checkedDate valueobject.DateString,
+	pointAmount valueobject.PositiveInt,
+	pointReason valueobject.String50,
+	idempotencyKey string,
 	createdAt time.Time,
 ) CheckInCompletedEvent {
 	return CheckInCompletedEvent{
-		UserID:      userID,
-		HabitID:     habitID,
-		CheckedDate: checkedDate,
-		CreatedAt:   createdAt,
+		UserID:         userID,
+		HabitID:        habitID,
+		CheckedDate:    checkedDate,
+		PointAmount:    pointAmount,
+		PointReason:    pointReason,
+		IdempotencyKey: idempotencyKey,
+		CreatedAt:      createdAt,
 	}
 }
 
