@@ -52,6 +52,8 @@ func main() {
 	userRepo := database.NewUserRepository(db)
 	habitRepo := database.NewHabitRepository(db)
 	checkInRepo := database.NewCheckInRepository(db)
+	pointLedgerRepo := database.NewPointLedgerRepository(db)
+	txManager := database.NewTransactionManager(db)
 	hasher := infraAuth.NewBcryptHasher(bcrypt.DefaultCost)
 	tokenGenerator := infraAuth.NewJWTGenerator([]byte(cfg.JWT.Secret))
 
@@ -68,7 +70,7 @@ func main() {
 	deleteService := applicationHabit.NewDelete(habitRepo)
 	getOverviewService := applicationHabit.NewGetOverview(habitRepo, checkInRepo, streakService, streakCache)
 	// checkIn
-	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo, streakCache)
+	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo, streakCache, pointLedgerRepo, txManager)
 	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo, streakCache)
 
 	// auth handler
