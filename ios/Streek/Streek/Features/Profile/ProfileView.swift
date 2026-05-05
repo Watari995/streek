@@ -5,6 +5,7 @@ struct ProfileView: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(StatsStore.self) private var statsStore
+    @Environment(PointStore.self) private var pointStore
     @State private var showLogoutConfirm = false
 
     var body: some View {
@@ -34,6 +35,7 @@ struct ProfileView: View {
                 habitStore.reset()
                 checkInStore.reset()
                 statsStore.reset()
+                pointStore.reset()
                 auth.logout()
             }
             Button("Cancel", role: .cancel) {}
@@ -149,4 +151,5 @@ struct ProfileView: View {
         .environment(HabitStore())
         .environment(CheckInStore())
         .environment(StatsStore())
+        .environment(PointStore())
 }

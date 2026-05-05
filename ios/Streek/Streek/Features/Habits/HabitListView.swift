@@ -4,6 +4,7 @@ struct HabitListView: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(CheckInStore.self) private var checkInStore
     @Environment(StatsStore.self) private var statsStore
+    @Environment(PointStore.self) private var pointStore
 
     @State private var showingForm = false
     @State private var editingHabit: Habit?
@@ -179,8 +180,10 @@ struct HabitListView: View {
         Task {
             do {
                 try await checkInStore.toggle(habitId: habit.id)
-                // Background refresh — streak count needs server-side recompute.
-                await statsStore.loadOverview()
+                // Background refresh — server-side streaks and points need to
+                // be recomputed after the toggle.
+                async let _: Void = statsStore.loadOverview()
+                async let _: Void = pointStore.loadBalance()
             } catch let APIError.server(_, _, message) {
                 toggleErrorMessage = message
             } catch {
@@ -196,4 +199,5 @@ struct HabitListView: View {
         .environment(HabitStore())
         .environment(CheckInStore())
         .environment(StatsStore())
+        .environment(PointStore())
 }

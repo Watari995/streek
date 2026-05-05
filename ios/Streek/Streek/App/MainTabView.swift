@@ -4,7 +4,7 @@ struct MainTabView: View {
     @State private var selection: Tab = .habits
 
     enum Tab: Hashable {
-        case habits, stats, profile
+        case habits, stats, points, profile
     }
 
     var body: some View {
@@ -20,6 +20,12 @@ struct MainTabView: View {
                     Label("Stats", systemImage: "chart.bar.fill")
                 }
                 .tag(Tab.stats)
+
+            PointsView()
+                .tabItem {
+                    Label("Points", systemImage: "sparkles")
+                }
+                .tag(Tab.points)
 
             ProfileView()
                 .tabItem {
