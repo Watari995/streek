@@ -35,6 +35,13 @@ func (m *TransactionManager) Run(ctx context.Context, fn func(ctx context.Contex
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			// after rollback, panic again
+			panic(r)
+		}
+	}()
 	ctx = WithTx(ctx, tx)
 	if err := fn(ctx); err != nil {
 		tx.Rollback()
