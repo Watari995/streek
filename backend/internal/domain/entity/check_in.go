@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
+	"github.com/samber/lo"
 )
 
 const (
@@ -38,11 +39,11 @@ func (c *CheckIn) CreatedAt() time.Time {
 
 // point ledger related
 func (c *CheckIn) PointAmount() valueobject.PositiveInt {
-	return valueobject.MustPositiveInt(pointAmountPerCheckIn)
+	return lo.Must(valueobject.NewPositiveInt(pointAmountPerCheckIn))
 }
 
 func (c *CheckIn) PointReason() valueobject.String50 {
-	return valueobject.MustString50(pointReasonCheckIn)
+	return lo.Must(valueobject.NewString50(pointReasonCheckIn))
 }
 
 func (c *CheckIn) IdempotencyKey() string {

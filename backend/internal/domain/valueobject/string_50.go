@@ -22,11 +22,3 @@ func NewString50(s string) (String50, error) {
 func (s String50) String() string {
 	return s.value
 }
-
-func MustString50(s string) String50 {
-	vo, err := NewString50(s)
-	if err != nil {
-		panic(err)
-	}
-	return vo
-}
