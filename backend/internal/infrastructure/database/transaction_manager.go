@@ -4,9 +4,15 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type txKey struct{}
+
+const (
+	deadlockDetectedCode = "40P01"
+	maxRetryCount        = 3
+)
 
 type TransactionManager struct {
 	db *sqlx.DB
@@ -26,11 +32,27 @@ func GetTx(ctx context.Context) (*sqlx.Tx, bool) {
 }
 
 func (m *TransactionManager) Run(ctx context.Context, fn func(ctx context.Context) error) error {
-	// 既に tx に参加している場合は、fn をそのまま実行
+	var lastErr error
+	for i := 0; i < maxRetryCount; i++ {
+		err := m.runOnce(ctx, fn)
+		if err == nil {
+			return nil
+		}
+		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == deadlockDetectedCode {
+			lastErr = err
+			continue // retry for deadlock
+		}
+		return err
+	}
+	return lastErr
+}
+
+func (m *TransactionManager) runOnce(ctx context.Context, fn func(ctx context.Context) error) error {
+	// if already in tx, execute fn directly
 	if _, ok := GetTx(ctx); ok {
 		return fn(ctx)
 	}
-	// 新規 tx を開始
+	// start new tx
 	tx, err := m.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
