@@ -13,6 +13,7 @@ import (
 	applicationCheckIn "github.com/Watari995/streek/backend/internal/application/check_in"
 	"github.com/Watari995/streek/backend/internal/application/eventhandler"
 	applicationHabit "github.com/Watari995/streek/backend/internal/application/habit"
+	applicationPoint "github.com/Watari995/streek/backend/internal/application/point"
 	"github.com/Watari995/streek/backend/internal/config"
 	"github.com/Watari995/streek/backend/internal/domain/event/types"
 	domainService "github.com/Watari995/streek/backend/internal/domain/service"
@@ -80,6 +81,9 @@ func main() {
 	// checkIn
 	checkInService := applicationCheckIn.NewCheckIn(checkInRepo, habitRepo, streakCache, eventPublisher, txManager)
 	undoService := applicationCheckIn.NewUndo(checkInRepo, habitRepo, streakCache)
+	// point
+	getBalanceService := applicationPoint.NewGetBalance(pointLedgerRepo)
+	getHistoryService := applicationPoint.NewGetHistory(pointLedgerRepo)
 
 	// auth handler
 	authHandler := handler.NewAuthHandler(
@@ -97,6 +101,7 @@ func main() {
 		undoService,
 	)
 	statsHandler := handler.NewStatsHandler(getOverviewService)
+	pointHandler := handler.NewPointHandler(getBalanceService, getHistoryService)
 
 	// middleware settings
 	e.Use(echoMiddleware.Logger())
@@ -127,6 +132,11 @@ func main() {
 	stats := api.Group("/stats", middleware.AuthMiddleware(tokenGenerator))
 	// optional "today" query parameter
 	stats.GET("/overview", statsHandler.GetOverview)
+
+	// points
+	points := api.Group("/points", middleware.AuthMiddleware(tokenGenerator))
+	points.GET("/balance", pointHandler.GetBalance)
+	points.GET("/history", pointHandler.GetHistory)
 
 	// start goroutine for background tasks
 	go func() {
