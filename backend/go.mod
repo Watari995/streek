@@ -3,6 +3,7 @@ module github.com/Watari995/streek/backend
 go 1.24.3
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cockroachdb/errors v1.11.3
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gofrs/uuid/v5 v5.4.0
@@ -10,13 +11,14 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.12.3
+	github.com/redis/go-redis/v9 v9.19.0
+	github.com/samber/lo v1.53.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.32.0
 	golang.org/x/sync v0.11.0
 )
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
@@ -31,9 +33,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.19.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	github.com/samber/lo v1.53.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
