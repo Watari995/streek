@@ -2,21 +2,24 @@ package checkin
 
 import (
 	"context"
+	"time"
 
 	"github.com/Watari995/streek/backend/internal/apperror"
 	domainCache "github.com/Watari995/streek/backend/internal/domain/cache"
 	"github.com/Watari995/streek/backend/internal/domain/entity"
+	"github.com/Watari995/streek/backend/internal/domain/event"
+	"github.com/Watari995/streek/backend/internal/domain/event/types"
 	"github.com/Watari995/streek/backend/internal/domain/repository"
 	"github.com/Watari995/streek/backend/internal/domain/transaction"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 )
 
 type CheckIn struct {
-	checkInRepo     repository.ICheckInRepository
-	habitRepo       repository.IHabitRepository
-	streakCache     domainCache.IStreakCache
-	pointLedgerRepo repository.IPointLedgerRepository
-	txManager       transaction.ITransactionManager
+	checkInRepo    repository.ICheckInRepository
+	habitRepo      repository.IHabitRepository
+	streakCache    domainCache.IStreakCache
+	txManager      transaction.ITransactionManager
+	eventPublisher event.IEventPublisher
 }
 
 type CheckInInput struct {
@@ -47,16 +50,17 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 		if _, err := c.checkInRepo.Save(ctx, checkInEntity); err != nil {
 			return apperror.NewInternalServerError().SetMessage("failed to check in")
 		}
-		pointLedgerEntity := entity.CreatePointLedger(
+		event := types.NewCheckInCompletedEvent(
 			input.UserID,
-			&input.HabitID,
-			valueobject.NewPointTypeEarn(),
+			input.HabitID,
+			input.CheckedDate,
 			checkInEntity.PointAmount(),
 			checkInEntity.PointReason(),
 			checkInEntity.IdempotencyKey(),
+			time.Now(),
 		)
-		if _, err := c.pointLedgerRepo.Save(ctx, pointLedgerEntity); err != nil {
-			return apperror.NewInternalServerError().SetMessage("failed to save point ledger")
+		if err := c.eventPublisher.Publish(ctx, event); err != nil {
+			return apperror.NewInternalServerError().SetMessage("failed to publish check in completed event")
 		}
 		return nil
 	})
@@ -70,6 +74,6 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	return nil
 }
 
-func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository, streakCache domainCache.IStreakCache, pointLedgerRepo repository.IPointLedgerRepository, txManager transaction.ITransactionManager) *CheckIn {
-	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo, streakCache: streakCache, pointLedgerRepo: pointLedgerRepo, txManager: txManager}
+func NewCheckIn(checkInRepo repository.ICheckInRepository, habitRepo repository.IHabitRepository, streakCache domainCache.IStreakCache, eventPublisher event.IEventPublisher, txManager transaction.ITransactionManager) *CheckIn {
+	return &CheckIn{checkInRepo: checkInRepo, habitRepo: habitRepo, streakCache: streakCache, eventPublisher: eventPublisher, txManager: txManager}
 }
