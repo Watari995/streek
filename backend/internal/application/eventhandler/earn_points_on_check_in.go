@@ -20,7 +20,7 @@ func NewEarnPointsOnCheckIn(pointLedgerRepo repository.IPointLedgerRepository) *
 }
 
 func (h *EarnPointsOnCheckIn) Handle(ctx context.Context, event event.DomainEvent) error {
-	checkInCompletedEvent, ok := event.(*types.CheckInCompletedEvent)
+	checkInCompletedEvent, ok := event.(types.CheckInCompletedEvent)
 	if !ok {
 		return apperror.NewInternalServerError().SetMessage("invalid event type")
 	}
