@@ -32,7 +32,8 @@ func (r *HabitRepository) Save(ctx context.Context, habit entity.Habit) (*entity
 	if d := habit.Description(); d != nil {
 		description = d.String()
 	}
-	_, err := r.db.ExecContext(ctx, `
+	conn := getConn(ctx, r.db)
+	_, err := conn.ExecContext(ctx, `
 		INSERT INTO habits (id, user_id, name, description, label_color, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		-- in case of conflict, update the habit
@@ -54,7 +55,8 @@ func (r *HabitRepository) Save(ctx context.Context, habit entity.Habit) (*entity
 
 func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) (*entity.Habit, error) {
 	var row habitRow
-	err := r.db.QueryRowxContext(ctx, `
+	conn := getConn(ctx, r.db)
+	err := conn.QueryRowxContext(ctx, `
 		SELECT id, user_id, name, description, label_color, created_at, updated_at
 		FROM habits
 		WHERE id = $1`, id).StructScan(&row)
@@ -68,7 +70,8 @@ func (r *HabitRepository) FindByID(ctx context.Context, id valueobject.HabitID) 
 
 func (r *HabitRepository) FindByUserID(ctx context.Context, userID valueobject.UserID) ([]*entity.Habit, error) {
 	rows := []habitRow{}
-	err := r.db.SelectContext(ctx, &rows, `
+	conn := getConn(ctx, r.db)
+	err := sqlx.SelectContext(ctx, conn, &rows, `
 		SELECT id, user_id, name, description, label_color, created_at, updated_at
 		FROM habits
 		WHERE user_id = $1`, userID)
@@ -89,7 +92,8 @@ func (r *HabitRepository) FindByUserID(ctx context.Context, userID valueobject.U
 }
 
 func (r *HabitRepository) Delete(ctx context.Context, id valueobject.HabitID) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM habits WHERE id = $1`, id)
+	conn := getConn(ctx, r.db)
+	_, err := conn.ExecContext(ctx, `DELETE FROM habits WHERE id = $1`, id)
 	return err
 }
 

@@ -71,3 +71,10 @@ func (m *TransactionManager) runOnce(ctx context.Context, fn func(ctx context.Co
 	}
 	return tx.Commit()
 }
+
+func getConn(ctx context.Context, db *sqlx.DB) sqlx.ExtContext {
+	if tx, ok := GetTx(ctx); ok {
+		return tx
+	}
+	return db
+}

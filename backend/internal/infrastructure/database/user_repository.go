@@ -26,7 +26,8 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 }
 
 func (r *UserRepository) Save(ctx context.Context, user entity.User) (*entity.User, error) {
-	_, err := r.db.ExecContext(ctx,
+	conn := getConn(ctx, r.db)
+	_, err := conn.ExecContext(ctx,
 		`INSERT INTO users (id, email, password_hash, created_at, updated_at)
 		 VALUES ($1, $2, $3, $4, $5)`,
 		user.ID(), user.Email().String(), user.PasswordHash(),
@@ -40,7 +41,8 @@ func (r *UserRepository) Save(ctx context.Context, user entity.User) (*entity.Us
 
 func (r *UserRepository) FindByID(ctx context.Context, id valueobject.UserID) (*entity.User, error) {
 	var row userRow
-	err := r.db.QueryRowxContext(ctx,
+	conn := getConn(ctx, r.db)
+	err := conn.QueryRowxContext(ctx,
 		`SELECT id, email, password_hash, created_at, updated_at FROM users WHERE id = $1`,
 		id,
 	).StructScan(&row)
@@ -53,7 +55,8 @@ func (r *UserRepository) FindByID(ctx context.Context, id valueobject.UserID) (*
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email valueobject.Email) (*entity.User, error) {
 	var row userRow
-	err := r.db.QueryRowxContext(ctx,
+	conn := getConn(ctx, r.db)
+	err := conn.QueryRowxContext(ctx,
 		`SELECT id, email, password_hash, created_at, updated_at FROM users WHERE email = $1`,
 		email.String(),
 	).StructScan(&row)

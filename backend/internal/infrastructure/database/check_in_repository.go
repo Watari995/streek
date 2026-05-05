@@ -25,7 +25,8 @@ func NewCheckInRepository(db *sqlx.DB) *CheckInRepository {
 }
 
 func (r *CheckInRepository) Save(ctx context.Context, checkIn entity.CheckIn) (*entity.CheckIn, error) {
-	_, err := r.db.ExecContext(ctx, `
+	conn := getConn(ctx, r.db)
+	_, err := conn.ExecContext(ctx, `
 		INSERT INTO check_ins (id, habit_id, checked_date, created_at)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (habit_id, checked_date) DO NOTHING
@@ -40,7 +41,8 @@ func (r *CheckInRepository) Save(ctx context.Context, checkIn entity.CheckIn) (*
 
 func (r *CheckInRepository) FindByHabitID(ctx context.Context, habitID valueobject.HabitID) ([]*entity.CheckIn, error) {
 	rows := []checkInRow{}
-	err := r.db.SelectContext(ctx, &rows, `
+	conn := getConn(ctx, r.db)
+	err := sqlx.SelectContext(ctx, conn, &rows, `
 		SELECT id, habit_id, checked_date, created_at
 		FROM check_ins
 		WHERE habit_id = $1`, habitID)
@@ -61,7 +63,8 @@ func (r *CheckInRepository) FindByHabitID(ctx context.Context, habitID valueobje
 }
 
 func (r *CheckInRepository) DeleteByHabitIDAndCheckedDate(ctx context.Context, habitID valueobject.HabitID, date valueobject.DateString) error {
-	_, err := r.db.ExecContext(ctx, `
+	conn := getConn(ctx, r.db)
+	_, err := conn.ExecContext(ctx, `
 		DELETE FROM check_ins
 		WHERE habit_id = $1 AND checked_date = $2`,
 		habitID, date.String(),
