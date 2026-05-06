@@ -2,6 +2,7 @@ package circuitbreaker
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,8 @@ type CircuitBreaker struct {
 	resetTimeout     time.Duration
 	lastFailureAt    time.Time
 	now              func() time.Time
+
+	mu sync.Mutex
 }
 
 func New(name string, failureThreshold int, resetTimeout time.Duration) *CircuitBreaker {
@@ -30,6 +33,9 @@ func New(name string, failureThreshold int, resetTimeout time.Duration) *Circuit
 }
 
 func (cb *CircuitBreaker) Execute(fn func() error) error {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+
 	if cb.state == StateOpen {
 		if cb.now().Sub(cb.lastFailureAt) >= cb.resetTimeout {
 			cb.state = StateHalfOpen
