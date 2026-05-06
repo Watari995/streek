@@ -6,10 +6,11 @@ import (
 )
 
 type Config struct {
-	Server ServerConfig
-	DB     DBConfig
-	Redis  RedisConfig
-	JWT    JWTConfig
+	Server       ServerConfig
+	DB           DBConfig
+	Redis        RedisConfig
+	JWT          JWTConfig
+	Notification NotificationConfig
 }
 
 type ServerConfig struct {
@@ -33,6 +34,15 @@ type JWTConfig struct {
 	Secret string
 }
 
+type NotificationConfig struct {
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
+	To           string
+}
+
 func (db DBConfig) DSN() string {
 	return fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
@@ -46,6 +56,10 @@ func (db DBConfig) DSN() string {
 
 func (r RedisConfig) Addr() string {
 	return fmt.Sprintf("%s:%s", r.Host, r.Port)
+}
+
+func (n NotificationConfig) IsSMTPEnabled() bool {
+	return n.SMTPHost != "" && n.SMTPPort != "" && n.SMTPUser != "" && n.SMTPPassword != "" && n.SMTPFrom != "" && n.To != ""
 }
 
 func Load() (*Config, error) {
@@ -71,6 +85,14 @@ func Load() (*Config, error) {
 			},
 			JWT: JWTConfig{
 				Secret: jwtSecret,
+			},
+			Notification: NotificationConfig{
+				SMTPHost:     getEnvOrDefault("SMTP_HOST", ""),
+				SMTPPort:     getEnvOrDefault("SMTP_PORT", "587"),
+				SMTPUser:     getEnvOrDefault("SMTP_USER", ""),
+				SMTPPassword: getEnvOrDefault("SMTP_PASSWORD", ""),
+				SMTPFrom:     getEnvOrDefault("SMTP_FROM", ""),
+				To:           getEnvOrDefault("NOTIFICATION_TO", ""),
 			},
 		},
 		nil

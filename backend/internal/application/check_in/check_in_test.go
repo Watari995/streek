@@ -151,16 +151,23 @@ func TestCheckIn_Do_SavesCheckInAndPublishesEvent(t *testing.T) {
 
 	assert.Equal(t, 1, txMgr.runCalls, "transaction Run should be called")
 	require.Len(t, checkInRepo.saveCalls, 1)
-	require.Len(t, publisher.publishCalls, 1)
+	require.Len(t, publisher.publishCalls, 2)
 	assert.Equal(t, 1, cache.invalidateCalls, "cache should be invalidated after commit")
 
-	// verify event payload
-	e, ok := publisher.publishCalls[0].(types.CheckInCompletedEvent)
-	require.True(t, ok, "published event must be CheckInCompletedEvent")
-	assert.Equal(t, userID.String(), e.UserID.String())
-	assert.Equal(t, habit.ID().String(), e.HabitID.String())
-	assert.Equal(t, "2026-05-05", e.CheckedDate.String())
-	assert.Greater(t, e.PointAmount.Int(), 0)
+	// verify in-tx event (CheckInCompletedEvent)
+	completed, ok := publisher.publishCalls[0].(types.CheckInCompletedEvent)
+	require.True(t, ok, "first published event must be CheckInCompletedEvent")
+	assert.Equal(t, userID.String(), completed.UserID.String())
+	assert.Equal(t, habit.ID().String(), completed.HabitID.String())
+	assert.Equal(t, "2026-05-05", completed.CheckedDate.String())
+	assert.Greater(t, completed.PointAmount.Int(), 0)
+
+	// verify post-commit event (CheckInSucceededEvent)
+	succeeded, ok := publisher.publishCalls[1].(types.CheckInSucceededEvent)
+	require.True(t, ok, "second published event must be CheckInSucceededEvent")
+	assert.Equal(t, userID.String(), succeeded.UserID.String())
+	assert.Equal(t, habit.ID().String(), succeeded.HabitID.String())
+	assert.Equal(t, "2026-05-05", succeeded.CheckedDate.String())
 }
 
 func TestCheckIn_Do_ReturnsErrorWhenHabitNotFound(t *testing.T) {

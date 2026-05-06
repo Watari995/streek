@@ -71,6 +71,14 @@ func (c *CheckIn) Do(ctx context.Context, input CheckInInput) error {
 	// clear streak cache
 	_ = c.streakCache.Invalidate(ctx, input.HabitID, input.CheckedDate)
 
+	// publish check in succeeded event
+	c.eventPublisher.Publish(ctx, types.NewCheckInSucceededEvent(
+		input.UserID,
+		input.HabitID,
+		input.CheckedDate,
+		time.Now(),
+	))
+
 	return nil
 }
 

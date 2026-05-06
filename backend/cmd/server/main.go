@@ -16,15 +16,20 @@ import (
 	applicationPoint "github.com/Watari995/streek/backend/internal/application/point"
 	"github.com/Watari995/streek/backend/internal/config"
 	"github.com/Watari995/streek/backend/internal/domain/event/types"
+	domainnotification "github.com/Watari995/streek/backend/internal/domain/notification"
 	domainService "github.com/Watari995/streek/backend/internal/domain/service"
+	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 	"github.com/Watari995/streek/backend/internal/handler"
 	infraAuth "github.com/Watari995/streek/backend/internal/infrastructure/auth"
 	"github.com/Watari995/streek/backend/internal/infrastructure/cache"
+	"github.com/Watari995/streek/backend/internal/infrastructure/circuitbreaker"
 	"github.com/Watari995/streek/backend/internal/infrastructure/database"
 	"github.com/Watari995/streek/backend/internal/infrastructure/event"
+	"github.com/Watari995/streek/backend/internal/infrastructure/notification"
 	"github.com/Watari995/streek/backend/internal/middleware"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/samber/lo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -61,13 +66,29 @@ func main() {
 	txManager := database.NewTransactionManager(db)
 	hasher := infraAuth.NewBcryptHasher(bcrypt.DefaultCost)
 	tokenGenerator := infraAuth.NewJWTGenerator([]byte(cfg.JWT.Secret))
+	var notifier domainnotification.INotifier
+	emailNotifier := notification.NewEmailNotifier(cfg.Notification.SMTPHost, cfg.Notification.SMTPPort, cfg.Notification.SMTPUser, cfg.Notification.SMTPPassword, cfg.Notification.SMTPFrom)
 
-	// handler
-	earnPointsOnCheckInHandler := eventhandler.NewEarnPointsOnCheckIn(pointLedgerRepo)
-	eventPublisher.Subscribe(types.EventTypeCheckInCompleted, earnPointsOnCheckInHandler.Handle)
+	cb := circuitbreaker.New("smtp", 3, 30*time.Second)
+	if cfg.Notification.IsSMTPEnabled() {
+		notifier = notification.NewCircuitBreakerNotifier(emailNotifier, cb)
+	} else {
+		notifier = notification.NewNoopNotifier()
+	}
 
 	// domain services
 	streakService := domainService.NewStreakService()
+
+	// handler
+	earnPointsOnCheckInHandler := eventhandler.NewEarnPointsOnCheckIn(pointLedgerRepo)
+	if cfg.Notification.IsSMTPEnabled() {
+		notifyStreakMilestoneHandler := eventhandler.NewNotifyStreakMilestone(notifier, checkInRepo, streakService, lo.Must(valueobject.NewEmail(cfg.Notification.To)))
+		eventPublisher.SubscribeAsync(types.EventTypeCheckInSucceeded, notifyStreakMilestoneHandler.Handle)
+	} else {
+		notifyStreakMilestoneHandler := eventhandler.NewNotifyStreakMilestone(notification.NewNoopNotifier(), checkInRepo, streakService, lo.Must(valueobject.NewEmail(cfg.Notification.To)))
+		eventPublisher.SubscribeAsync(types.EventTypeCheckInSucceeded, notifyStreakMilestoneHandler.Handle)
+	}
+	eventPublisher.Subscribe(types.EventTypeCheckInCompleted, earnPointsOnCheckInHandler.Handle)
 
 	// services
 	registerService := applicationAuth.NewRegister(userRepo, hasher, tokenGenerator)
