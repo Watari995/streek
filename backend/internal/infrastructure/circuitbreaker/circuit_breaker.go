@@ -40,7 +40,7 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 	err := fn()
 	if err != nil {
 		cb.failureCount++
-		if cb.failureCount >= cb.failureThreshold {
+		if cb.failureCount >= cb.failureThreshold || cb.state == StateHalfOpen {
 			cb.state = StateOpen
 		}
 		cb.lastFailureAt = cb.now()

@@ -75,3 +75,16 @@ func TestExecute_HalfOpen_Success_TransitionsToClosed(t *testing.T) {
 	assert.NoError(t, cb.Execute(func() error { return nil }))
 	assert.Equal(t, StateClosed, cb.state, "should transition to closed state after success")
 }
+
+func TestExecute_HalfOpen_Failure_TransitionsToOpen(t *testing.T) {
+	t.Parallel()
+	fakeNow := time.Now()
+	cb := New("test", 3, 30*time.Second)
+	cb.now = func() time.Time { return fakeNow }
+	for i := 0; i < 3; i++ {
+		cb.Execute(func() error { return errors.New("test") })
+	}
+	fakeNow = fakeNow.Add(31 * time.Second)
+	assert.Error(t, cb.Execute(func() error { return errors.New("test") }))
+	assert.Equal(t, StateOpen, cb.state, "should open circuit breaker on failure threshold reached")
+}
