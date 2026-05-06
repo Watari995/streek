@@ -16,7 +16,6 @@ import (
 	applicationPoint "github.com/Watari995/streek/backend/internal/application/point"
 	"github.com/Watari995/streek/backend/internal/config"
 	"github.com/Watari995/streek/backend/internal/domain/event/types"
-	domainnotification "github.com/Watari995/streek/backend/internal/domain/notification"
 	domainService "github.com/Watari995/streek/backend/internal/domain/service"
 	"github.com/Watari995/streek/backend/internal/domain/valueobject"
 	"github.com/Watari995/streek/backend/internal/handler"
@@ -57,6 +56,9 @@ func main() {
 	defer redisClient.Close()
 	streakCache := cache.NewStreakCache(redisClient)
 
+	// domain services
+	streakService := domainService.NewStreakService()
+
 	// repository
 	userRepo := database.NewUserRepository(db)
 	habitRepo := database.NewHabitRepository(db)
@@ -66,28 +68,18 @@ func main() {
 	txManager := database.NewTransactionManager(db)
 	hasher := infraAuth.NewBcryptHasher(bcrypt.DefaultCost)
 	tokenGenerator := infraAuth.NewJWTGenerator([]byte(cfg.JWT.Secret))
-	var notifier domainnotification.INotifier
-	emailNotifier := notification.NewEmailNotifier(cfg.Notification.SMTPHost, cfg.Notification.SMTPPort, cfg.Notification.SMTPUser, cfg.Notification.SMTPPassword, cfg.Notification.SMTPFrom)
-
-	cb := circuitbreaker.New("smtp", 3, 30*time.Second)
+	// smtp notification with circuit breaker(repository layer)
 	if cfg.Notification.IsSMTPEnabled() {
-		notifier = notification.NewCircuitBreakerNotifier(emailNotifier, cb)
-	} else {
-		notifier = notification.NewNoopNotifier()
+		emailNotifier := notification.NewEmailNotifier(cfg.Notification.SMTPHost, cfg.Notification.SMTPPort, cfg.Notification.SMTPUser, cfg.Notification.SMTPPassword, cfg.Notification.SMTPFrom)
+		cb := circuitbreaker.New("smtp", 3, 30*time.Second)
+		notifier := notification.NewCircuitBreakerNotifier(emailNotifier, cb)
+		notifyTo := lo.Must(valueobject.NewEmail(cfg.Notification.To))
+		notifyHandler := eventhandler.NewNotifyStreakMilestone(notifier, checkInRepo, streakService, notifyTo)
+		eventPublisher.SubscribeAsync(types.EventTypeCheckInSucceeded, notifyHandler.Handle)
 	}
-
-	// domain services
-	streakService := domainService.NewStreakService()
 
 	// handler
 	earnPointsOnCheckInHandler := eventhandler.NewEarnPointsOnCheckIn(pointLedgerRepo)
-	if cfg.Notification.IsSMTPEnabled() {
-		notifyStreakMilestoneHandler := eventhandler.NewNotifyStreakMilestone(notifier, checkInRepo, streakService, lo.Must(valueobject.NewEmail(cfg.Notification.To)))
-		eventPublisher.SubscribeAsync(types.EventTypeCheckInSucceeded, notifyStreakMilestoneHandler.Handle)
-	} else {
-		notifyStreakMilestoneHandler := eventhandler.NewNotifyStreakMilestone(notification.NewNoopNotifier(), checkInRepo, streakService, lo.Must(valueobject.NewEmail(cfg.Notification.To)))
-		eventPublisher.SubscribeAsync(types.EventTypeCheckInSucceeded, notifyStreakMilestoneHandler.Handle)
-	}
 	eventPublisher.Subscribe(types.EventTypeCheckInCompleted, earnPointsOnCheckInHandler.Handle)
 
 	// services
