@@ -46,6 +46,9 @@ func (cb *CircuitBreaker) Execute(fn func() error) error {
 		cb.lastFailureAt = cb.now()
 	} else {
 		cb.failureCount = 0
+		if cb.state == StateHalfOpen {
+			cb.state = StateClosed
+		}
 	}
 	return err
 }

@@ -61,7 +61,7 @@ func TestExecute_Open_ReturnsErrCircuitOpen(t *testing.T) {
 	assert.Equal(t, 0, callCount)
 }
 
-func TestExecute_Open_AfterResetTimeout_TransitionsToHalfOpen(t *testing.T) {
+func TestExecute_HalfOpen_Success_TransitionsToClosed(t *testing.T) {
 	t.Parallel()
 	fakeNow := time.Now()
 	cb := New("test", 3, 30*time.Second)
@@ -73,5 +73,5 @@ func TestExecute_Open_AfterResetTimeout_TransitionsToHalfOpen(t *testing.T) {
 	// reset half open when reset timeout has passed
 	fakeNow = fakeNow.Add(31 * time.Second)
 	assert.NoError(t, cb.Execute(func() error { return nil }))
-	assert.Equal(t, StateHalfOpen, cb.state, "should transition to half open state after reset timeout")
+	assert.Equal(t, StateClosed, cb.state, "should transition to closed state after success")
 }
