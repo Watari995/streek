@@ -14,6 +14,8 @@ func NewStreakService() *StreakService {
 	return &StreakService{}
 }
 
+var streakMilestones = []int{10, 20, 30, 40, 50, 60, 70, 80, 90}
+
 func (s *StreakService) ComputeCurrentStreak(checkIns []*entity.CheckIn, today valueobject.DateString) int {
 	if len(checkIns) == 0 {
 		return 0
@@ -88,6 +90,15 @@ func (s *StreakService) ComputeLongestStreak(checkIns []*entity.CheckIn) int {
 func (s *StreakService) HasCheckInOnDate(checkIns []*entity.CheckIn, date valueobject.DateString) bool {
 	for _, checkIn := range checkIns {
 		if checkIn.CheckedDate() == date {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *StreakService) IsStreakMilestone(streak int) bool {
+	for _, milestone := range streakMilestones {
+		if streak == milestone {
 			return true
 		}
 	}

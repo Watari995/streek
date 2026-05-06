@@ -81,6 +81,9 @@ type mockEventPublisher struct {
 func (m *mockEventPublisher) Subscribe(eventType string, handler func(context.Context, event.DomainEvent) error) error {
 	return nil
 }
+func (m *mockEventPublisher) SubscribeAsync(eventType string, handler func(context.Context, event.DomainEvent) error) error {
+	return nil
+}
 func (m *mockEventPublisher) Publish(ctx context.Context, e event.DomainEvent) error {
 	m.publishCalls = append(m.publishCalls, e)
 	if m.publishFunc != nil {
