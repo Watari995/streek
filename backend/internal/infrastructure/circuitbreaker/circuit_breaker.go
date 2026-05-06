@@ -25,7 +25,8 @@ type CircuitBreaker struct {
 	lastFailureAt    time.Time
 	now              func() time.Time
 
-	mu sync.Mutex
+	mu                    sync.Mutex
+	halfOpenProbeInFlight bool
 }
 
 func New(name string, failureThreshold int, resetTimeout time.Duration) *CircuitBreaker {
@@ -34,16 +35,31 @@ func New(name string, failureThreshold int, resetTimeout time.Duration) *Circuit
 
 func (cb *CircuitBreaker) Execute(fn func() error) error {
 	cb.mu.Lock()
-	defer cb.mu.Unlock()
 
 	if cb.state == StateOpen {
 		if cb.now().Sub(cb.lastFailureAt) >= cb.resetTimeout {
 			cb.state = StateHalfOpen
 		} else {
+			cb.mu.Unlock()
 			return ErrCircuitOpen
 		}
 	}
+	if cb.state == StateHalfOpen {
+		if cb.halfOpenProbeInFlight {
+			cb.mu.Unlock()
+			return ErrCircuitOpen
+		}
+		cb.halfOpenProbeInFlight = true
+	}
+	cb.mu.Unlock()
+
+	// execute function
 	err := fn()
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	if cb.state == StateHalfOpen {
+		cb.halfOpenProbeInFlight = false
+	}
 	if err != nil {
 		cb.failureCount++
 		if cb.failureCount >= cb.failureThreshold || cb.state == StateHalfOpen {
