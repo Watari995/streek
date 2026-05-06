@@ -60,3 +60,18 @@ func TestExecute_Open_ReturnsErrCircuitOpen(t *testing.T) {
 	assert.ErrorIs(t, err, ErrCircuitOpen)
 	assert.Equal(t, 0, callCount)
 }
+
+func TestExecute_Open_AfterResetTimeout_TransitionsToHalfOpen(t *testing.T) {
+	t.Parallel()
+	fakeNow := time.Now()
+	cb := New("test", 3, 30*time.Second)
+	cb.now = func() time.Time { return fakeNow }
+	for i := 0; i < 3; i++ {
+		cb.Execute(func() error { return errors.New("test") })
+	}
+	assert.Equal(t, StateOpen, cb.state, "should open circuit breaker on failure threshold reached")
+	// reset half open when reset timeout has passed
+	fakeNow = fakeNow.Add(31 * time.Second)
+	assert.NoError(t, cb.Execute(func() error { return nil }))
+	assert.Equal(t, StateHalfOpen, cb.state, "should transition to half open state after reset timeout")
+}
