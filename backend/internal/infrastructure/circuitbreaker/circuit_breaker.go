@@ -1,19 +1,28 @@
 package circuitbreaker
 
+type State int
+
 const (
-	StateClosed   = "closed"
-	StateOpen     = "open"
-	StateHalfOpen = "half_open"
+	StateClosed State = iota
+	StateOpen
+	StateHalfOpen
 )
 
 type CircuitBreaker struct {
-	name string
+	name         string
+	failureCount int
 }
 
-func NewCircuitBreaker(name string) *CircuitBreaker {
+func New(name string) *CircuitBreaker {
 	return &CircuitBreaker{name: name}
 }
 
 func (cb *CircuitBreaker) Execute(fn func() error) error {
-	return fn()
+	err := fn()
+	if err != nil {
+		cb.failureCount++
+	} else {
+		cb.failureCount = 0
+	}
+	return err
 }
