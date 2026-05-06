@@ -2,6 +2,8 @@ package circuitbreaker
 
 import (
 	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -87,4 +89,48 @@ func TestExecute_HalfOpen_Failure_TransitionsToOpen(t *testing.T) {
 	fakeNow = fakeNow.Add(31 * time.Second)
 	assert.Error(t, cb.Execute(func() error { return errors.New("test") }))
 	assert.Equal(t, StateOpen, cb.state, "should open circuit breaker on failure threshold reached")
+}
+
+func TestExecute_HalfOpen_Concurrent_OnlyOneProbeAllowed(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	fakeNow := time.Now()
+	cb := New("test", 3, 30*time.Second)
+	cb.now = func() time.Time { return fakeNow }
+	for i := 0; i < 3; i++ {
+		cb.Execute(func() error { return errors.New("test") })
+	}
+	fakeNow = fakeNow.Add(31 * time.Second)
+
+	// Act
+	var callCount atomic.Int32
+	started := make(chan struct{})
+	release := make(chan struct{})
+
+	var errA error
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		errA = cb.Execute(func() error {
+			callCount.Add(1)
+			close(started)
+			<-release
+			return nil
+		})
+	}()
+
+	<-started
+	errB := cb.Execute(func() error {
+		callCount.Add(1)
+		return nil
+	})
+	close(release)
+	wg.Wait()
+
+	assert.NoError(t, errA)
+	assert.ErrorIs(t, errB, ErrCircuitOpen)
+	assert.Equal(t, int32(1), callCount.Load())
+	assert.Equal(t, StateClosed, cb.state)
 }
