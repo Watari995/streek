@@ -34,9 +34,8 @@ import (
 )
 
 const (
-	// naming?
-	rateLimitLimit  = 10
-	rateLimitWindow = 1 * time.Minute // 1 minute
+	rateLimitMaxRequests = 10
+	rateLimitWindow      = 1 * time.Minute
 )
 
 func main() {
@@ -64,7 +63,7 @@ func main() {
 	streakCache := cache.NewStreakCache(redisClient)
 
 	// rate limiter
-	rateLimiter := ratelimit.NewRedisRateLimiter(redisClient, rateLimitLimit, rateLimitWindow, time.Now)
+	rateLimiter := ratelimit.NewRedisRateLimiter(redisClient, rateLimitMaxRequests, rateLimitWindow, time.Now)
 
 	// domain services
 	streakService := domainService.NewStreakService()
