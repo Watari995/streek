@@ -34,8 +34,10 @@ import (
 )
 
 const (
-	rateLimitMaxRequests = 10
-	rateLimitWindow      = 1 * time.Minute
+	rateLimitMaxRequests       = 10
+	rateLimitWindow            = 1 * time.Minute
+	circuitBreakerMaxFailures  = 3
+	circuitBreakerResetTimeout = 30 * time.Second
 )
 
 func main() {
@@ -80,7 +82,7 @@ func main() {
 	// smtp notification with circuit breaker(repository layer)
 	if cfg.Notification.IsSMTPEnabled() {
 		emailNotifier := notification.NewEmailNotifier(cfg.Notification.SMTPHost, cfg.Notification.SMTPPort, cfg.Notification.SMTPUser, cfg.Notification.SMTPPassword, cfg.Notification.SMTPFrom)
-		cb := circuitbreaker.New("smtp", 3, 30*time.Second)
+		cb := circuitbreaker.New("smtp", circuitBreakerMaxFailures, circuitBreakerResetTimeout)
 		notifier := notification.NewCircuitBreakerNotifier(emailNotifier, cb)
 		notifyTo := lo.Must(valueobject.NewEmail(cfg.Notification.To))
 		notifyHandler := eventhandler.NewNotifyStreakMilestone(notifier, checkInRepo, streakService, notifyTo)
