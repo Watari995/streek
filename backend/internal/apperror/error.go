@@ -92,6 +92,13 @@ func NewConflictError() MyError {
 	}
 }
 
+func NewRateLimitExceededError() MyError {
+	return &myError{
+		generalCode: CodeRateLimitExceeded,
+		status:      http.StatusTooManyRequests,
+	}
+}
+
 func NewInternalServerError() MyError {
 	return &myError{
 		generalCode: CodeInternalError,
