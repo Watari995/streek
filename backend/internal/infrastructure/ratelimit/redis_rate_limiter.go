@@ -36,7 +36,7 @@ func (r *RedisRateLimiter) Allow(ctx context.Context, key string) (bool, error) 
 
 	// pipelineを使って4つのコマンドを1回のリクエストで実行
 	pipe := r.client.Pipeline()
-	// ZRemRangeByScore: 古いの削除
+	// ZRemRangeByScore: windowStart-1ナノ秒より前の古いデータを削除
 	pipe.ZRemRangeByScore(ctx, redisKey, "0", strconv.FormatInt(windowStart-1, 10))
 	// ZAdd: 今のリクエストを追加
 	pipe.ZAdd(ctx, redisKey, redis.Z{Score: float64(now.UnixNano()), Member: member})
