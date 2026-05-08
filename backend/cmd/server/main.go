@@ -25,11 +25,18 @@ import (
 	"github.com/Watari995/streek/backend/internal/infrastructure/database"
 	"github.com/Watari995/streek/backend/internal/infrastructure/event"
 	"github.com/Watari995/streek/backend/internal/infrastructure/notification"
+	"github.com/Watari995/streek/backend/internal/infrastructure/ratelimit"
 	"github.com/Watari995/streek/backend/internal/middleware"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/samber/lo"
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	// naming?
+	rateLimitLimit  = 10
+	rateLimitWindow = 1 * time.Minute // 1 minute
 )
 
 func main() {
@@ -55,6 +62,9 @@ func main() {
 	}
 	defer redisClient.Close()
 	streakCache := cache.NewStreakCache(redisClient)
+
+	// rate limiter
+	rateLimiter := ratelimit.NewRedisRateLimiter(redisClient, rateLimitLimit, rateLimitWindow, time.Now)
 
 	// domain services
 	streakService := domainService.NewStreakService()
@@ -132,7 +142,7 @@ func main() {
 	api.POST("/auth/login", authHandler.Login)
 
 	// habits
-	habits := api.Group("/habits", middleware.AuthMiddleware(tokenGenerator))
+	habits := api.Group("/habits", middleware.AuthMiddleware(tokenGenerator), middleware.RateLimitMiddleware(rateLimiter))
 	habits.GET("", habitHandler.List)
 	habits.POST("", habitHandler.Create)
 	habits.PUT("/:id", habitHandler.Update)
@@ -142,12 +152,12 @@ func main() {
 	checkIns.DELETE("", checkInHandler.Undo)
 
 	// stats
-	stats := api.Group("/stats", middleware.AuthMiddleware(tokenGenerator))
+	stats := api.Group("/stats", middleware.AuthMiddleware(tokenGenerator), middleware.RateLimitMiddleware(rateLimiter))
 	// optional "today" query parameter
 	stats.GET("/overview", statsHandler.GetOverview)
 
 	// points
-	points := api.Group("/points", middleware.AuthMiddleware(tokenGenerator))
+	points := api.Group("/points", middleware.AuthMiddleware(tokenGenerator), middleware.RateLimitMiddleware(rateLimiter))
 	points.GET("/balance", pointHandler.GetBalance)
 	points.GET("/history", pointHandler.GetHistory)
 
