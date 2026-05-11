@@ -63,3 +63,19 @@ func NewPointLedgerIDFromString(s string) (PointLedgerID, error) {
 	}
 	return PointLedgerID{base}, nil
 }
+
+type OutboxEventID struct {
+	PrimaryIDBase
+}
+
+func NewOutboxEventID() OutboxEventID {
+	return OutboxEventID{newPrimaryIDBase()}
+}
+
+func NewOutboxEventIDFromString(s string) (OutboxEventID, error) {
+	base, err := newPrimaryIDBaseFromString(s)
+	if err != nil {
+		return OutboxEventID{}, err
+	}
+	return OutboxEventID{base}, nil
+}
