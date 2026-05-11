@@ -46,3 +46,20 @@ CREATE TABLE point_ledger (
 );
 
 CREATE INDEX idx_point_ledger_user_id ON point_ledger(user_id);
+
+-- Outbox events (Outboxパターン: DB変更とイベント発行の原子性担保)
+CREATE TABLE outbox_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type VARCHAR(100) NOT NULL,
+    payload JSONB NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    max_retries INTEGER NOT NULL DEFAULT 5,
+    last_error TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    processed_at TIMESTAMPTZ,
+    CHECK (status IN ('PENDING', 'SENT', 'FAILED'))
+);
+
+-- ポーリング高速化のためのpartial index（PENDINGのみ）
+CREATE INDEX idx_outbox_events_pending ON outbox_events (created_at) WHERE status = 'PENDING';
