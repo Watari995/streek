@@ -1,3 +1,7 @@
+package valueobject
+
+import validation "github.com/go-ozzo/ozzo-validation/v4"
+
 type OutboxStatus struct {
 	value string
 }
