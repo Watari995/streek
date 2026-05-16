@@ -9,6 +9,14 @@ struct HabitListView: View {
     @State private var showingForm = false
     @State private var editingHabit: Habit?
     @State private var toggleErrorMessage: String?
+    @State private var celebration: Celebration?
+
+    /// Identifiable payload for the milestone celebration overlay.
+    private struct Celebration: Identifiable {
+        let id = UUID()
+        let habitName: String
+        let streak: Int
+    }
 
     var body: some View {
         NavigationStack {
@@ -61,6 +69,17 @@ struct HabitListView: View {
                 } message: { message in
                     Text(message)
                 }
+                .overlay {
+                    if let celebration {
+                        MilestoneCelebrationView(
+                            habitName: celebration.habitName,
+                            streak: celebration.streak,
+                            onDismiss: { self.celebration = nil }
+                        )
+                        .transition(.opacity)
+                    }
+                }
+                .animation(.easeInOut(duration: 0.2), value: celebration?.id)
         }
         .preferredColorScheme(.dark)
     }
@@ -177,13 +196,27 @@ struct HabitListView: View {
     private func toggle(_ habit: Habit) {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
+        // Server-side streak before the toggle, used to detect a milestone
+        // crossing once the overview re-syncs.
+        let streakBefore = statsStore.streak(for: habit.id).current
         Task {
             do {
                 try await checkInStore.toggle(habitId: habit.id)
-                // Background refresh — server-side streaks and points need to
-                // be recomputed after the toggle.
-                async let _: Void = statsStore.loadOverview()
+                // Streaks must be re-synced before we can detect a milestone,
+                // so await the overview; points can refresh in the background.
                 async let _: Void = pointStore.loadBalance()
+                await statsStore.loadOverview()
+
+                let streakAfter = statsStore.streak(for: habit.id).current
+                if let milestone = StreakMilestone.reached(
+                    before: streakBefore,
+                    after: streakAfter
+                ) {
+                    celebration = Celebration(
+                        habitName: habit.name,
+                        streak: milestone
+                    )
+                }
             } catch let APIError.server(_, _, message) {
                 toggleErrorMessage = message
             } catch {
