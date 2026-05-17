@@ -24,7 +24,21 @@ actor APIClient {
         return e
     }()
 
-    init(baseURL: URL = URL(string: "http://localhost:8080")!) {
+    // Simulator は localhost、実機は Mac の LAN IP を使う。
+    // 環境変数 STREEK_API_BASE_URL で上書き可能。
+    private static let defaultBaseURL: URL = {
+        if let override = ProcessInfo.processInfo.environment["STREEK_API_BASE_URL"],
+           let url = URL(string: override) {
+            return url
+        }
+        #if targetEnvironment(simulator)
+        return URL(string: "http://localhost:8080")!
+        #else
+        return URL(string: "http://192.168.0.192:8080")!
+        #endif
+    }()
+
+    init(baseURL: URL = APIClient.defaultBaseURL) {
         self.baseURL = baseURL
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 10
